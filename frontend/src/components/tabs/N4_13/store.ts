@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { v4 as uuidv4 } from 'uuid';
 import { Store } from './types';
 import { recalculate } from './recalculate';
 import { buildInitialSections } from './sections';
@@ -95,6 +96,10 @@ const useStore = create<Store>()(immer((set) => ({
   updateSectionTitle: (sId, title) => set(state => {
     const sec = state.sections.find(s => s.id === sId);
     if (sec) sec.title = title;
+  }),
+
+  updateCompanyInfo: (field, value) => set(state => {
+    state.company[field] = value;
   }),
 })));
 

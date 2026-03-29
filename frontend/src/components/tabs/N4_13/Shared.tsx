@@ -370,4 +370,4 @@ const NoteSectionComp = ({ section }: { section: Section }) => {
 
 
 
-export { EditableLabel, EditableNumber, NoteRowComp, BankAccountTable, ShareholderTable, LoanTable, UPASTable, NoteSectionComp };
+export { EditableLabel, EditableNumber, NoteRowComp, BankAccountTable, ShareholderTable, LoanTable, NoteSectionComp };

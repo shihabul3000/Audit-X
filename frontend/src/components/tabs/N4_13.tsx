@@ -50,6 +50,17 @@ export const N4_13: React.FC<{ data: any }> = ({ data }) => {
           <div className="flex-1 w-full bg-white rounded shadow-sm border border-slate-200 print:border-none print:shadow-none print:w-full overflow-hidden">
             <div className="px-12 py-8 print:px-8 space-y-0">
 
+              <div className="flex justify-end mb-6 border-b-[1.5px] border-black pb-2">
+                <div className="flex gap-6">
+                  <div className="w-32 text-center font-bold text-[14px] font-serif border-b border-black pb-1">
+                    {store.company.reportingDateLabel}
+                  </div>
+                  <div className="w-32 text-center font-bold text-[14px] font-serif border-b border-black pb-1">
+                    {store.company.priorDateLabel}
+                  </div>
+                </div>
+              </div>
+
               {store.sections.map((s, i) => {
                 const compName = s.id.charAt(0).toUpperCase() + s.id.slice(1).replace(/_/g, '');
                 const NoteComponent = (Notes as any)[compName];

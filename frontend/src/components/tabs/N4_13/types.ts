@@ -1,5 +1,5 @@
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-interface Company {
+export interface Company {
   companyName: string;
   address: string;
   reportingDateLabel: string;
@@ -7,7 +7,7 @@ interface Company {
   currency: string;
 }
 
-interface PPE {
+export interface PPE {
   costClosing_cy: number;
   costOpening_py: number;
   depClosing_cy: number;
@@ -17,21 +17,21 @@ interface PPE {
   taxBase_cy: number;
 }
 
-interface ShareConfig {
+export interface ShareConfig {
   authorizedShares: number;
   authorizedFaceValue: number;
   issuedShares: number;
   issuedFaceValue: number;
 }
 
-interface TaxConfig {
+export interface TaxConfig {
   rateOnRevenue_cy: number;
   rateOnRevenue_py: number;
   rateOnIncome_cy: number;
   rateOnIncome_py: number;
 }
 
-interface Row {
+export interface Row {
   id: string;
   label: string;
   value_cy: number;
@@ -44,7 +44,7 @@ interface Row {
   indentLevel?: number;
 }
 
-interface Section {
+export interface Section {
   id: string;
   noteNumber: string;
   title: string;
@@ -54,7 +54,7 @@ interface Section {
   rows: Row[];
 }
 
-interface BankAccount {
+export interface BankAccount {
   id: string;
   bankName: string;
   accountNo: string;
@@ -62,13 +62,13 @@ interface BankAccount {
   value_py: number;
 }
 
-interface Shareholder {
+export interface Shareholder {
   id: string;
   name: string;
   shares: number;
 }
 
-interface Loan {
+export interface Loan {
   id: string;
   lenderName: string;
   accountNo: string;
@@ -77,7 +77,10 @@ interface Loan {
   total_py: number;
 }
 
-interface Store {
+export type LoanEntry = Loan;
+export type UPASEntry = Loan;
+
+export interface Store {
   company: Company;
   ppe: PPE;
   shareConfig: ShareConfig;
@@ -96,4 +99,5 @@ interface Store {
   updateTableItem: (type: string, id: string, field: string, value: any) => void;
   deleteTableItem: (type: string, id: string) => void;
   updateSectionTitle: (sId: string, title: string) => void;
+  updateCompanyInfo: (field: keyof Company, value: string) => void;
 }
