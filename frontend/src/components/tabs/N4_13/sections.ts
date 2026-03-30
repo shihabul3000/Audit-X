@@ -143,18 +143,18 @@ const buildInitialSections = () => [
       { id: 'issued_capital', label: '', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
     ]
   },
-  // ── NOTE 12.03: CALLS-IN-ARREAR (was "Note 0" in demo) ───────────────────
+  // ── NOTE 13: CALLS-IN-ARREAR (changed from 12.03) ───────────────────
   {
-    id: 'note12_03', noteNumber: '12.03', title: 'Calls-in-arrear',
+    id: 'note12_03', noteNumber: '13', title: 'Calls-in-arrear',
     suffixLabel: 'Calls-in-arrear', showDoubleLine: true,
     rows: [
       { id: 'calls_arrear', label: 'Calls-in-arrear', value_cy: 0, value_py: 0 },
       { id: 'calls_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 13: REVALUATION SURPLUS ─────────────────────────────────────────
+  // ── NOTE 14: REVALUATION SURPLUS ─────────────────────────────────────────
   {
-    id: 'note13', noteNumber: '13', title: 'Revaluation surplus',
+    id: 'note13', noteNumber: '14', title: 'Revaluation surplus',
     suffixLabel: 'Revaluation surplus', showDoubleLine: true,
     rows: [
       { id: 'reval_surplus', label: 'Revaluation surplus on land (freehold)', value_cy: 0, value_py: 0 },
@@ -162,9 +162,9 @@ const buildInitialSections = () => [
       { id: 'reval_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 14: RETAINED EARNINGS ────────────────────────────────────────────
+  // ── NOTE 15: RETAINED EARNINGS ────────────────────────────────────────────
   {
-    id: 'note14', noteNumber: '14', title: 'Retained earnings',
+    id: 'note14', noteNumber: '15', title: 'Retained earnings',
     suffixLabel: 'Retained earnings', showDoubleLine: true,
     rows: [
       { id: 're_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
@@ -174,25 +174,25 @@ const buildInitialSections = () => [
       { id: 're_closing', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 15: BORROWINGS FROM BANK ─────────────────────────────────────────
+  // ── NOTE 16: BORROWINGS FROM BANK ─────────────────────────────────────────
   {
-    id: 'note15', noteNumber: '15', title: 'Borrowings from bank',
+    id: 'note15', noteNumber: '16', title: 'Borrowings from bank',
     tableType: 'loan',
     rows: [
       { id: 'loan_grand', label: 'Total', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
     ]
   },
-  // ── NOTE 16: UPAS LIABILITIES ─────────────────────────────────────────────
+  // ── NOTE 17: UPAS LIABILITIES ─────────────────────────────────────────────
   {
-    id: 'note16', noteNumber: '16', title: 'UPAS liabilities',
+    id: 'note16', noteNumber: '17', title: 'UPAS liabilities',
     tableType: 'upas',
     rows: [
       { id: 'upas_grand', label: 'Total', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
     ]
   },
-  // ── NOTE 17: DEFERRED TAX LIABILITIES ─────────────────────────────────────
+  // ── NOTE 18: DEFERRED TAX LIABILITIES ─────────────────────────────────────
   {
-    id: 'note17_dtl', noteNumber: '17', title: 'Deferred tax liabilities',
+    id: 'note17_dtl', noteNumber: '18', title: 'Deferred tax liabilities',
     suffixLabel: 'Deferred tax liabilities', showDoubleLine: true,
     rows: [
       { id: 'dtl_opening', label: 'Opening deferred tax liability', value_cy: 0, value_py: 0, locked: true },
@@ -200,9 +200,9 @@ const buildInitialSections = () => [
       { id: 'dtl_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 18: FINANCIAL LIABILITIES WITH RELATED PARTIES (was "Note 0") ────
+  // ── NOTE 19: FINANCIAL LIABILITIES WITH RELATED PARTIES ────
   {
-    id: 'note18', noteNumber: '18', title: 'Financial liabilities with related parties',
+    id: 'note18', noteNumber: '19', title: 'Financial liabilities with related parties',
     suffixLabel: 'Financial liabilities with related parties', showDoubleLine: true,
     rows: [
       { id: 'rel_liab_1', label: 'Loan from directors', value_cy: 0, value_py: 0 },
@@ -210,9 +210,9 @@ const buildInitialSections = () => [
       { id: 'rel_liab_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 19: ADVANCE RECEIVED FROM CUSTOMERS (was "Note 0") ──────────────
+  // ── NOTE 20: ADVANCE RECEIVED FROM CUSTOMERS ──────────────
   {
-    id: 'note19_adv', noteNumber: '19', title: 'Advance received from customers',
+    id: 'note19_adv', noteNumber: '20', title: 'Advance received from customers',
     suffixLabel: 'Advance received from customers', showDoubleLine: true,
     rows: [
       { id: 'adv_cust_1', label: 'Advance from trade customers', value_cy: 0, value_py: 0 },
@@ -220,9 +220,9 @@ const buildInitialSections = () => [
       { id: 'adv_cust_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 20: TRADE AND OTHER PAYABLES ─────────────────────────────────────
+  // ── NOTE 21: TRADE AND OTHER PAYABLES ─────────────────────────────────────
   {
-    id: 'note20_pay', noteNumber: '20', title: 'Trade and other payables',
+    id: 'note20_pay', noteNumber: '21', title: 'Trade and other payables',
     suffixLabel: 'Trade and other payables', showDoubleLine: true,
     rows: [
       { id: 'pay_rm', label: 'Payable for Raw materials', value_cy: 0, value_py: 0 },
@@ -232,9 +232,9 @@ const buildInitialSections = () => [
       { id: 'pay_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 21: CURRENT TAX PAYABLE ──────────────────────────────────────────
+  // ── NOTE 22: CURRENT TAX PAYABLE ──────────────────────────────────────────
   {
-    id: 'note21_ctp', noteNumber: '21', title: 'Current tax payable',
+    id: 'note21_ctp', noteNumber: '22', title: 'Current tax payable',
     suffixLabel: 'Current tax payable', showDoubleLine: true,
     rows: [
       { id: 'ctp_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
@@ -244,9 +244,9 @@ const buildInitialSections = () => [
       { id: 'ctp_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 22: PROVISION FOR EXPENSE ────────────────────────────────────────
+  // ── NOTE 23: PROVISION FOR EXPENSE ────────────────────────────────────────
   {
-    id: 'note22', noteNumber: '22', title: 'Provision for expense',
+    id: 'note22', noteNumber: '23', title: 'Provision for expense',
     suffixLabel: 'Provision for expense', showDoubleLine: true,
     rows: [
       { id: 'prov_wages', label: 'Outstanding wages, salary and allowances', value_cy: 0, value_py: 0 },
@@ -258,9 +258,9 @@ const buildInitialSections = () => [
       { id: 'prov_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 23: REVENUE ──────────────────────────────────────────────────────
+  // ── NOTE 24: REVENUE ──────────────────────────────────────────────────────
   {
-    id: 'note19', noteNumber: '23', title: 'Revenue',
+    id: 'note19', noteNumber: '24', title: 'Revenue',
     suffixLabel: 'Revenue', showDoubleLine: true,
     rows: [
       { id: 'revenue', label: 'Sales/bill received', value_cy: 0, value_py: 0 },
@@ -272,13 +272,13 @@ const buildInitialSections = () => [
       { id: 'net_revenue', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 24: COST OF SALES ────────────────────────────────────────────────
+  // ── NOTE 25: COST OF SALES ────────────────────────────────────────────────
   {
-    id: 'note20', noteNumber: '24', title: 'Cost of sales',
+    id: 'note20', noteNumber: '25', title: 'Cost of sales',
     suffixLabel: 'Cost of sales', showDoubleLine: true,
     rows: [
       { id: 'cos_open_fg', label: 'Opening inventory — Finished goods', value_cy: 0, value_py: 0, locked: true },
-      { id: 'cop', label: 'Cost of Production (Note 24.01)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'cop', label: 'Cost of Production (Note 25.01)', value_cy: 0, value_py: 0, crossNoteRef: true },
       { id: 'cos_subtotal', label: '', value_cy: 0, value_py: 0, isTotal: true },
       { id: 'samples', label: 'Product sample costs', value_cy: 0, value_py: 0 },
       { id: 'cos_close_fg', label: 'Closing inventory — FG (Note 6)', value_cy: 0, value_py: 0, crossNoteRef: true },
@@ -286,16 +286,16 @@ const buildInitialSections = () => [
     ]
   },
   {
-    id: 'note20_01', noteNumber: '24.01', title: 'Cost of Production',
+    id: 'note20_01', noteNumber: '25.01', title: 'Cost of Production',
     suffixLabel: 'Cost of Production', showDoubleLine: true,
     rows: [
-      { id: 'mat_used', label: 'Materials used in production (Note 24.02)', value_cy: 0, value_py: 0, crossNoteRef: true },
-      { id: 'prod_oh', label: 'Production overhead (Note 24.03)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'mat_used', label: 'Materials used in production (Note 25.02)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'prod_oh', label: 'Production overhead (Note 25.03)', value_cy: 0, value_py: 0, crossNoteRef: true },
       { id: 'cop_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
   {
-    id: 'note20_02', noteNumber: '24.02', title: 'Materials used in production',
+    id: 'note20_02', noteNumber: '25.02', title: 'Materials used in production',
     suffixLabel: 'Materials used in production', showDoubleLine: true,
     rows: [
       { id: 'rm_hdr', label: 'Raw materials', value_cy: 0, value_py: 0, isSubHeader: true },
@@ -315,7 +315,7 @@ const buildInitialSections = () => [
     ]
   },
   {
-    id: 'note20_03', noteNumber: '24.03', title: 'Production overhead',
+    id: 'note20_03', noteNumber: '25.03', title: 'Production overhead',
     suffixLabel: 'Production overhead', showDoubleLine: true,
     rows: [
       { id: 'wip_open', label: 'Opening Work-in-progress', value_cy: 0, value_py: 0, locked: true },
@@ -328,7 +328,7 @@ const buildInitialSections = () => [
       { id: 'diesel_f', label: 'Diesel, Octane & Kerosene — Factory', value_cy: 0, value_py: 0 },
       { id: 'conv_f', label: 'Conveyance — Factory', value_cy: 0, value_py: 0 },
       { id: 'lab_f', label: 'Lab supplies — Factory', value_cy: 0, value_py: 0 },
-      { id: 'prod_sup', label: 'Production supplies used (Note 24.04)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'prod_sup', label: 'Production supplies used (Note 25.04)', value_cy: 0, value_py: 0, crossNoteRef: true },
       { id: 'dep_factory', label: 'Depreciation expense (Annexure A)', value_cy: 0, value_py: 0, crossNoteRef: true },
       { id: 'amort_f', label: 'Amortization expense (Annexure A)', value_cy: 0, value_py: 0 },
       { id: 'mfg_sub', label: '', value_cy: 0, value_py: 0, isTotal: true },
@@ -337,7 +337,7 @@ const buildInitialSections = () => [
     ]
   },
   {
-    id: 'note20_04', noteNumber: '24.04', title: 'Production supplies and spare parts used',
+    id: 'note20_04', noteNumber: '25.04', title: 'Production supplies and spare parts used',
     suffixLabel: 'Production supplies and spare parts used', showDoubleLine: true,
     rows: [
       { id: 'ps_open', label: 'Opening Production supplies', value_cy: 0, value_py: 0, locked: true },
@@ -346,9 +346,9 @@ const buildInitialSections = () => [
       { id: 'ps_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 25: ADMIN EXPENSE ────────────────────────────────────────────────
+  // ── NOTE 26: ADMIN EXPENSE ────────────────────────────────────────────────
   {
-    id: 'note21', noteNumber: '25', title: 'Administrative expense',
+    id: 'note21', noteNumber: '26', title: 'Administrative expense',
     suffixLabel: 'Administrative expense', showDoubleLine: true,
     rows: [
       { id: 'salary_a', label: 'Salary and allowances', value_cy: 0, value_py: 0 },
@@ -366,9 +366,9 @@ const buildInitialSections = () => [
       { id: 'adm_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 26: DISTRIBUTION COSTS ───────────────────────────────────────────
+  // ── NOTE 27: DISTRIBUTION COSTS ───────────────────────────────────────────
   {
-    id: 'note26', noteNumber: '26', title: 'Distribution costs',
+    id: 'note26', noteNumber: '27', title: 'Distribution costs',
     suffixLabel: 'Distribution costs', showDoubleLine: true,
     rows: [
       { id: 'comm_exp', label: 'Communication Expenses', value_cy: 0, value_py: 0 },
@@ -380,9 +380,9 @@ const buildInitialSections = () => [
       { id: 'dist_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 27: OTHER INCOME (was "Note 0" in demo) ──────────────────────────
+  // ── NOTE 28: OTHER INCOME ──────────────────────────
   {
-    id: 'note27', noteNumber: '27', title: 'Other income',
+    id: 'note27', noteNumber: '28', title: 'Other income',
     suffixLabel: 'Other income', showDoubleLine: true,
     rows: [
       { id: 'bank_interest', label: 'Bank interest received', value_cy: 0, value_py: 0 },
@@ -391,9 +391,9 @@ const buildInitialSections = () => [
       { id: 'other_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 28: FINANCE COSTS ────────────────────────────────────────────────
+  // ── NOTE 29: FINANCE COSTS ────────────────────────────────────────────────
   {
-    id: 'note23', noteNumber: '28', title: 'Finance costs',
+    id: 'note23', noteNumber: '29', title: 'Finance costs',
     suffixLabel: 'Finance costs', showDoubleLine: true,
     rows: [
       { id: 'int_cc', label: 'Interest on CC', value_cy: 0, value_py: 0 },
@@ -406,9 +406,9 @@ const buildInitialSections = () => [
       { id: 'fc_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
     ]
   },
-  // ── NOTE 29: INCOME TAX EXPENSE ───────────────────────────────────────────
+  // ── NOTE 30: INCOME TAX EXPENSE ───────────────────────────────────────────
   {
-    id: 'note25', noteNumber: '29', title: 'Income tax expense',
+    id: 'note25', noteNumber: '30', title: 'Income tax expense',
     suffixLabel: 'Income tax expense', showDoubleLine: true,
     rows: [
       { id: 'current_tax', label: 'Current tax expense', value_cy: 0, value_py: 0, crossNoteRef: true },
@@ -417,7 +417,7 @@ const buildInitialSections = () => [
     ]
   },
   {
-    id: 'note25_01', noteNumber: '29.01', title: 'Current tax for the year',
+    id: 'note25_01', noteNumber: '30.01', title: 'Current tax for the year',
     suffixLabel: 'Current tax', showDoubleLine: true,
     rows: [
       { id: 'pbt', label: 'Profit before tax', value_cy: 0, value_py: 0 },
@@ -428,6 +428,5 @@ const buildInitialSections = () => [
     ]
   },
 ];
-
 
 export { buildInitialSections };
