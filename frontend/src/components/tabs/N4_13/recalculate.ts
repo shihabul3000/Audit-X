@@ -155,11 +155,17 @@ const recalculate = (state: any) => {
   setVal('note15', 'loan_grand', 'value_py', loanPY);
 
   // UPAS
-  const upasNC = state.upasEntries.reduce((s, l) => s + l.nonCurrent_cy, 0);
-  const upasC = state.upasEntries.reduce((s, l) => s + l.current_cy, 0);
-  const upasPY = state.upasEntries.reduce((s, l) => s + l.total_py, 0);
+  const upasNC = state.upasEntries.reduce((s: any, l: any) => s + l.nonCurrent_cy, 0);
+  const upasC = state.upasEntries.reduce((s: any, l: any) => s + l.current_cy, 0);
+  const upasPY = state.upasEntries.reduce((s: any, l: any) => s + l.total_py, 0);
   setVal('note16', 'upas_grand', 'value_cy', upasNC + upasC);
   setVal('note16', 'upas_grand', 'value_py', upasPY);
+
+  // ── Step 13: Note 4 NBV → note04_01 active use row ──────────────
+  const ppeNBV_cy = state.ppe.costClosing_cy - state.ppe.depClosing_cy;
+  const ppeNBV_py = state.ppe.costOpening_py - state.ppe.depOpening_py;
+  setVal('note04_01', 'ppe_active', 'value_cy', ppeNBV_cy);
+  setVal('note04_01', 'ppe_active', 'value_py', ppeNBV_py);
 
   // ── Final total pass ──────────────────────────────────────────────────────
   state.sections.forEach(sec => {

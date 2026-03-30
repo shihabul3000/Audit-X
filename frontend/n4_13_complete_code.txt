@@ -1,74 +1,23 @@
-# File Structure for N4-13 Components
-src/components/tabs/
-  N4_13.tsx
-  N4_13/
-    Shared.tsx
-    Note4.tsx
-    Note5.tsx
-    Note6.tsx
-    Note7.tsx
-    Note8.tsx
-    Note9.tsx
-    Note10.tsx
-    Note11.tsx
-    Note12.tsx
-    Note13.tsx
-    Note14.tsx
-    Note15.tsx
-    Note16.tsx
-    Note17.tsx
-    Note18.tsx
-    Note19.tsx
-    Note20.tsx
-    Note21.tsx
-    Note22.tsx
-    Note23.tsx
-    Note24.tsx
-    Note25.tsx
-    Note26.tsx
-    Note27.tsx
-    Note28.tsx
-    Note29.tsx
 
-================================================================================
-FILE: src/components/tabs/N4_13.tsx
-================================================================================
-import React from 'react';
-import { AuditReportData } from '../../types';
+// ==============================================================================
+// FILE: src/components/tabs/N4_13.tsx
+// ==============================================================================
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { Layout } from 'lucide-react';
 import { getFormattedDate } from '../../utils/dateFormatter';
-import { N4_13Context } from './N4_13/Shared';
-import Note4 from './N4_13/Note4';
-import Note5 from './N4_13/Note5';
-import Note6 from './N4_13/Note6';
-import Note7 from './N4_13/Note7';
-import Note8 from './N4_13/Note8';
-import Note9 from './N4_13/Note9';
-import Note10 from './N4_13/Note10';
-import Note11 from './N4_13/Note11';
-import Note12 from './N4_13/Note12';
-import Note13 from './N4_13/Note13';
-import Note14 from './N4_13/Note14';
-import Note15 from './N4_13/Note15';
-import Note16 from './N4_13/Note16';
-import Note17 from './N4_13/Note17';
-import Note18 from './N4_13/Note18';
-import Note19 from './N4_13/Note19';
-import Note20 from './N4_13/Note20';
-import Note21 from './N4_13/Note21';
-import Note22 from './N4_13/Note22';
-import Note23 from './N4_13/Note23';
-import Note24 from './N4_13/Note24';
-import Note25 from './N4_13/Note25';
-import Note26 from './N4_13/Note26';
-import Note27 from './N4_13/Note27';
-import Note28 from './N4_13/Note28';
-import Note29 from './N4_13/Note29';
 
-interface N4_13Props {
-  data: AuditReportData;
-}
+import { useStore } from './N4_13/store';
+import { ConfigPanel } from './N4_13/ConfigPanel';
+import * as Notes from './N4_13/index';
 
-export const N4_13: React.FC<N4_13Props> = ({ data }) => {
+export const N4_13: React.FC<{ data: any }> = ({ data }) => {
+  const [showConfig, setShowConfig] = useState(false);
+  const store = useStore();
+
+  const reportingDateLabel = getFormattedDate(data?.reportingDate) || '30 June 2024';
+  const priorDateLabel = getFormattedDate(data?.startDate) || '30 June 2023';
+
   const parseValue = (val: string | number): number => {
     if (!val || val === '' || val === '-') return 0;
     const str = typeof val === 'string' ? val.replace(/,/g, '').replace(/%/g, '').replace(/\(/g, '-').replace(/\)/g, '') : val.toString();
@@ -76,1015 +25,2009 @@ export const N4_13: React.FC<N4_13Props> = ({ data }) => {
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  const formatDisplay = (num: number): string => {
-    if (num === 0) return '-';
-    const absNum = Math.abs(num);
-    const formatted = absNum.toLocaleString('en-US');
-    return num < 0 ? `(${formatted})` : formatted;
-  };
+  React.useEffect(() => {
+    store.updateCompanyInfo('reportingDateLabel', reportingDateLabel);
+    store.updateCompanyInfo('priorDateLabel', priorDateLabel);
+    store.updateCompanyInfo('companyName', data?.company || 'New Company Ltd.');
 
-  const ppeTotals = data.ppe.assets.reduce((acc, asset) => {
-    const co = parseValue(asset.costOpening);
-    const ca = parseValue(asset.costAddition);
-    const cd = parseValue(asset.costDisposal);
-    const cc = co + ca - cd;
+    if (data?.ppe) {
+      let costClosing_cy = 0;
+      let costOpening_py = 0;
+      let depClosing_cy = 0;
+      let depOpening_py = 0;
+      let totalDepCharged_cy = 0;
 
-    const do_ = parseValue(asset.depOpening);
-    const dc = parseValue(asset.depCharged);
-    const da = parseValue(asset.depAdjustment);
-    const dcl = do_ + dc + da;
+      data.ppe.assets.forEach(asset => {
+        const co = parseValue(asset.costOpening);
+        const ca = parseValue(asset.costAddition);
+        const cd = parseValue(asset.costDisposal);
+        const cc = co + ca - cd;
 
-    return {
-      costOpening: acc.costOpening + co,
-      costClosing: acc.costClosing + cc,
-      depOpening: acc.depOpening + do_,
-      depCharged: acc.depCharged + dc,
-      depClosing: acc.depClosing + dcl,
-    };
-  }, { costOpening: 0, costClosing: 0, depOpening: 0, depCharged: 0, depClosing: 0 });
+        const do_ = parseValue(asset.depOpening);
+        const dc = parseValue(asset.depCharged);
+        const da = parseValue(asset.depAdjustment);
+        const dcl = do_ + dc + da;
 
-  const adminDep = parseValue(data.ppe.breakdown.adminExpense);
-  const factoryDep = ppeTotals.depCharged - adminDep;
+        costClosing_cy += cc;
+        costOpening_py += co;
+        depClosing_cy += dcl;
+        depOpening_py += do_;
+        totalDepCharged_cy += dc;
+      });
 
-  const renderNoteHeader = (num: string, title: string) => (
-    <div className="flex gap-2 font-bold mt-6 mb-2">
-      <span className="w-12">{num}</span>
-      <span>. {title}</span>
-    </div>
-  );
+      const adminDep = parseValue(data.ppe.breakdown?.adminExpense || 0);
 
-  const renderRow = (label: string, val25: string = '-', val24: string = '-', isBold: boolean = false, isItalic: boolean = false, indent: boolean = true) => (
-    <div className={`flex justify-between py-0.5 ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}>
-      <span className={`${indent ? 'pl-14' : 'pl-0'} flex-1`}>{label}</span>
-      <div className="flex gap-8 text-right">
-        <span className="w-24">{val25}</span>
-        <span className="w-24">{val24}</span>
-      </div>
-    </div>
-  );
+      // Update PPE summarized data in store
+      store.updatePPESummary({
+        costClosing_cy,
+        costOpening_py,
+        depClosing_cy,
+        depOpening_py,
+        totalDepCharged_cy,
+        adminDep_cy: adminDep,
+      });
+    }
+  }, [reportingDateLabel, priorDateLabel, data]);
 
-  const renderTotalLine = () => (
-    <div className="flex justify-end mt-1">
-      <div className="flex gap-8">
-        <div className="w-24 border-t border-black"></div>
-        <div className="w-24 border-t border-black"></div>
-      </div>
-    </div>
-  );
+  return (
+    <div className="min-h-screen bg-slate-50/50 print:bg-white pb-20 font-sans text-slate-800">
 
-  const renderDoubleTotalLine = (label?: string) => (
-    <div className="flex justify-end mt-0.5 relative">
-      <div className="flex gap-8">
-        <div className="w-24 border-t-4 border-double border-black"></div>
-        <div className="w-24 border-t-4 border-double border-black"></div>
-      </div>
-      {label && (
-        <div className="absolute left-[calc(100%+12px)] bottom-0 whitespace-nowrap font-serif text-[11px]">
-          {label}
+      {/* HEADER BAR (Non-print) */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-40 print:hidden shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded text-indigo-700 border border-indigo-100">
+              Notes 4-30
+            </h1>
+            <span className="text-slate-400 text-xs">—</span>
+            <span className="text-slate-500 text-sm font-medium">{store.company.companyName}</span>
+          </div>
+
+          <button
+            onClick={() => setShowConfig(!showConfig)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 rounded transition-colors"
+          >
+            <Layout size={15} className={showConfig ? "text-indigo-600" : ""} />
+            {showConfig ? 'Hide Config' : 'Show Config'}
+          </button>
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto pt-8 px-6 print:p-0">
+        <div className="flex flex-col xl:flex-row gap-6 items-start">
+
+          {/* MAIN DOCUMENT AREA */}
+          <div className="flex-1 w-full bg-white rounded shadow-sm border border-slate-200 print:border-none print:shadow-none print:w-full overflow-hidden">
+            <div className="px-12 py-8 print:px-8 space-y-0">
+
+              <div className="flex justify-end mb-6 border-b-[1.5px] border-black pb-2">
+                <div className="flex gap-6">
+                  <div className="w-32 text-center font-bold text-[14px] font-serif border-b border-black pb-1">
+                    {store.company.reportingDateLabel}
+                  </div>
+                  <div className="w-32 text-center font-bold text-[14px] font-serif border-b border-black pb-1">
+                    {store.company.priorDateLabel}
+                  </div>
+                </div>
+              </div>
+
+              {store.sections.map((s, i) => {
+                const compName = s.id.charAt(0).toUpperCase() + s.id.slice(1).replace(/_/g, '');
+                const NoteComponent = (Notes as any)[compName];
+
+                if (!NoteComponent) return null;
+
+                return (
+                  <motion.div key={s.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.02, duration: 0.2 }}>
+                    <NoteComponent />
+                  </motion.div>
+                );
+              })}
+
+            </div>
+          </div>
+
+          {/* SIDE CONFIG PANEL */}
+          {showConfig && (
+            <div className="w-full xl:w-80 shrink-0 sticky top-20 print:hidden">
+              <ConfigPanel onClose={() => setShowConfig(false)} />
+            </div>
+          )}
+
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/store.ts
+// ==============================================================================
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
+import { v4 as uuidv4 } from 'uuid';
+import { Store } from './types';
+import { recalculate } from './recalculate';
+import { buildInitialSections } from './sections';
+// ─── STORE ────────────────────────────────────────────────────────────────────
+const useStore = create<Store>()(immer((set) => ({
+  company: {
+    companyName: 'New Company Ltd.',
+    address: 'Dhaka, Bangladesh',
+    reportingDateLabel: '30 June 2025',
+    priorDateLabel: '30 June 2024',
+    currency: 'BDT',
+  },
+  ppe: {
+    costClosing_cy: 0, costOpening_py: 0,
+    depClosing_cy: 0, depOpening_py: 0,
+    totalDepCharged_cy: 0, adminDep_cy: 0, taxBase_cy: 0,
+  },
+  shareConfig: { authorizedShares: 10000000, authorizedFaceValue: 10, issuedShares: 1000000, issuedFaceValue: 10 },
+  taxConfig: { rateOnRevenue_cy: 0.01, rateOnRevenue_py: 0.006, rateOnIncome_cy: 0.275, rateOnIncome_py: 0.275 },
+  shareholders: [],
+  bankAccounts: [],
+  loans: [],
+  upasEntries: [],
+  sections: buildInitialSections(),
+
+  updateRow: (sId, rId, field, value) => set(state => {
+    const sec = state.sections.find(s => s.id === sId);
+    const row = sec?.rows.find(r => r.id === rId);
+    if (row && !row.crossNoteRef) row[field] = value;
+    recalculate(state);
+  }),
+
+  addRow: (sId) => set(state => {
+    const sec = state.sections.find(s => s.id === sId);
+    if (!sec) return;
+    const newRow = { id: uuidv4(), label: 'New Item', value_cy: 0, value_py: 0, indentLevel: 1 };
+    const lastTotalIdx = [...sec.rows].reverse().findIndex(r => r.isTotal);
+    const insertAt = lastTotalIdx >= 0 ? sec.rows.length - 1 - lastTotalIdx + 1 : sec.rows.length;
+    sec.rows.splice(insertAt - 1, 0, newRow);
+    recalculate(state);
+  }),
+
+  deleteRow: (sId, rId) => set(state => {
+    const sec = state.sections.find(s => s.id === sId);
+    if (!sec) return;
+    const row = sec.rows.find(r => r.id === rId);
+    if (row?.locked || row?.isTotal || row?.crossNoteRef) return;
+    sec.rows = sec.rows.filter(r => r.id !== rId);
+    recalculate(state);
+  }),
+
+  updateRowLabel: (sId, rId, label) => set(state => {
+    const sec = state.sections.find(s => s.id === sId);
+    const row = sec?.rows.find(r => r.id === rId);
+    if (row && !row.isTotal) row.label = label;
+  }),
+
+  updateConfig: (cat, field, value) => set(state => {
+    state[cat][field] = value;
+    recalculate(state);
+  }),
+
+  addTableItem: (type) => set(state => {
+    if (type === 'bank')
+      state.bankAccounts.push({ id: uuidv4(), bankName: 'New Bank', accountNo: 'A/C No.', value_cy: 0, value_py: 0 });
+    else if (type === 'sh')
+      state.shareholders.push({ id: uuidv4(), name: 'New Shareholder', shares: 0 });
+    else if (type === 'loan')
+      state.loans.push({ id: uuidv4(), lenderName: 'New Lender', accountNo: 'A/C No.', nonCurrent_cy: 0, current_cy: 0, total_py: 0 });
+    else if (type === 'upas')
+      state.upasEntries.push({ id: uuidv4(), lenderName: 'New UPAS Lender', accountNo: 'A/C No.', nonCurrent_cy: 0, current_cy: 0, total_py: 0 });
+    recalculate(state);
+  }),
+
+  updateTableItem: (type, id, field, value) => set(state => {
+    const list = type === 'bank' ? state.bankAccounts
+      : type === 'sh' ? state.shareholders
+        : type === 'loan' ? state.loans
+          : state.upasEntries;
+    const item = list.find(i => i.id === id);
+    if (item) item[field] = value;
+    recalculate(state);
+  }),
+
+  deleteTableItem: (type, id) => set(state => {
+    if (type === 'bank') state.bankAccounts = state.bankAccounts.filter(i => i.id !== id);
+    else if (type === 'sh') state.shareholders = state.shareholders.filter(i => i.id !== id);
+    else if (type === 'loan') state.loans = state.loans.filter(i => i.id !== id);
+    else state.upasEntries = state.upasEntries.filter(i => i.id !== id);
+    recalculate(state);
+  }),
+
+  updateSectionTitle: (sId, title) => set(state => {
+    const sec = state.sections.find(s => s.id === sId);
+    if (sec) sec.title = title;
+  }),
+
+  updatePPESummary: (summary: Partial<Store['ppe']>) => set(state => {
+    state.ppe = { ...state.ppe, ...summary };
+    recalculate(state);
+  }),
+
+  updateCompanyInfo: (field, value) => set(state => {
+    state.company[field] = value;
+  }),
+})));
+
+
+export { useStore };
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/types.ts
+// ==============================================================================
+// ─── TYPES ────────────────────────────────────────────────────────────────────
+export interface Company {
+  companyName: string;
+  address: string;
+  reportingDateLabel: string;
+  priorDateLabel: string;
+  currency: string;
+}
+
+export interface PPE {
+  costClosing_cy: number;
+  costOpening_py: number;
+  depClosing_cy: number;
+  depOpening_py: number;
+  totalDepCharged_cy: number;
+  adminDep_cy: number;
+  taxBase_cy: number;
+}
+
+export interface ShareConfig {
+  authorizedShares: number;
+  authorizedFaceValue: number;
+  issuedShares: number;
+  issuedFaceValue: number;
+}
+
+export interface TaxConfig {
+  rateOnRevenue_cy: number;
+  rateOnRevenue_py: number;
+  rateOnIncome_cy: number;
+  rateOnIncome_py: number;
+}
+
+export interface Row {
+  id: string;
+  label: string;
+  value_cy: number;
+  value_py: number;
+  isTotal?: boolean;
+  isSubHeader?: boolean;
+  isRichText?: boolean;
+  crossNoteRef?: boolean;
+  locked?: boolean;
+  indentLevel?: number;
+}
+
+export interface Section {
+  id: string;
+  noteNumber: string;
+  title: string;
+  suffixLabel?: string;
+  showDoubleLine?: boolean;
+  tableType?: string;
+  rows: Row[];
+}
+
+export interface BankAccount {
+  id: string;
+  bankName: string;
+  accountNo: string;
+  value_cy: number;
+  value_py: number;
+}
+
+export interface Shareholder {
+  id: string;
+  name: string;
+  shares: number;
+}
+
+export interface Loan {
+  id: string;
+  lenderName: string;
+  accountNo: string;
+  nonCurrent_cy: number;
+  current_cy: number;
+  total_py: number;
+}
+
+export type LoanEntry = Loan;
+export type UPASEntry = Loan;
+
+export interface Store {
+  company: Company;
+  ppe: PPE;
+  shareConfig: ShareConfig;
+  taxConfig: TaxConfig;
+  shareholders: Shareholder[];
+  bankAccounts: BankAccount[];
+  loans: Loan[];
+  upasEntries: Loan[];
+  sections: Section[];
+  updateRow: (sId: string, rId: string, field: string, value: number) => void;
+  addRow: (sId: string) => void;
+  deleteRow: (sId: string, rId: string) => void;
+  updateRowLabel: (sId: string, rId: string, label: string) => void;
+  updateConfig: (cat: string, field: string, value: any) => void;
+  addTableItem: (type: string) => void;
+  updateTableItem: (type: string, id: string, field: string, value: any) => void;
+  deleteTableItem: (type: string, id: string) => void;
+  updateSectionTitle: (sId: string, title: string) => void;
+  updatePPESummary: (summary: Partial<Store['ppe']>) => void;
+  updateCompanyInfo: (field: keyof Company, value: string) => void;
+}
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/recalculate.ts
+// ==============================================================================
+import { Store } from './types';
+// ─── CALCULATION ENGINE ───────────────────────────────────────────────────────
+const recalculate = (state: any) => {
+  const getRow = (sId: string, rId: string) => state.sections.find((s: any) => s.id === sId)?.rows.find((r: any) => r.id === rId);
+  const setVal = (sId: string, rId: string, f: string, v: number) => { const r = getRow(sId, rId); if (r) r[f] = v; };
+  const getVal = (sId: string, rId: string, f = 'value_cy') => getRow(sId, rId)?.[f] ?? 0;
+
+  // ── Step 1: PPE → Note 4 ──────────────────────────────────────────────────
+  setVal('note04', 'ppe_cost', 'value_cy', state.ppe.costClosing_cy);
+  setVal('note04', 'ppe_cost', 'value_py', state.ppe.costOpening_py);
+  setVal('note04', 'ppe_dep', 'value_cy', -Math.abs(state.ppe.depClosing_cy));
+  setVal('note04', 'ppe_dep', 'value_py', -Math.abs(state.ppe.depOpening_py));
+
+  // Note 5 (Intangible) — user-entered, just recalc total
+  // Note 6 (Inventories) — user-entered
+
+  // ── Step 2: Bank accounts → Note 11 cash_at_bank ─────────────────────────
+  const bcy = state.bankAccounts.reduce((s, b) => s + b.value_cy, 0);
+  const bpy = state.bankAccounts.reduce((s, b) => s + b.value_py, 0);
+  setVal('note11', 'cash_at_bank', 'value_cy', bcy);
+  setVal('note11', 'cash_at_bank', 'value_py', bpy);
+
+  // ── Step 3: Closing stocks → Cost of Sales (Note 20/note20) ──────────────
+  // Note 6 FG → Note 20 closing FG (negative)
+  const fg_cy = getVal('note06', 'fg', 'value_cy');
+  const fg_py = getVal('note06', 'fg', 'value_py');
+  setVal('note20', 'cos_close_fg', 'value_cy', -Math.abs(fg_cy));
+  setVal('note20', 'cos_close_fg', 'value_py', -Math.abs(fg_py));
+
+  // Note 6 RM → Note 20_02 closing RM (negative)
+  const rm_cy = getVal('note06', 'rm', 'value_cy');
+  const rm_py = getVal('note06', 'rm', 'value_py');
+  setVal('note20_02', 'rm_close', 'value_cy', -Math.abs(rm_cy));
+  setVal('note20_02', 'rm_close', 'value_py', -Math.abs(rm_py));
+
+  // Note 6 WIP → Note 20_03 closing WIP (negative)
+  const wip_cy = getVal('note06', 'wip', 'value_cy');
+  const wip_py = getVal('note06', 'wip', 'value_py');
+  setVal('note20_03', 'wip_close', 'value_cy', wip_cy === 0 ? 0 : -Math.abs(wip_cy));
+  setVal('note20_03', 'wip_close', 'value_py', wip_py === 0 ? 0 : -Math.abs(wip_py));
+
+  // Note 6 prod_supplies → Note 20_04 closing PS (negative)
+  const ps_cy = getVal('note06', 'prod_supplies', 'value_cy');
+  const ps_py = getVal('note06', 'prod_supplies', 'value_py');
+  setVal('note20_04', 'ps_close', 'value_cy', ps_cy === 0 ? 0 : -Math.abs(ps_cy));
+  setVal('note20_04', 'ps_close', 'value_py', ps_py === 0 ? 0 : -Math.abs(ps_py));
+
+  // ── Step 4: PPE depreciation split → Note 24.03 factory dep, Note 25 admin dep ──
+  const factoryDep = state.ppe.totalDepCharged_cy - state.ppe.adminDep_cy;
+  setVal('note20_03', 'dep_factory', 'value_cy', factoryDep);
+  setVal('note20_03', 'dep_factory', 'value_py', 0);
+  setVal('note21', 'dep_admin', 'value_cy', state.ppe.adminDep_cy);
+  setVal('note21', 'dep_admin', 'value_py', 0);
+
+  // ── Step 5: Note 20_04 → 20_03 prod_sup ──────────────────────────────────
+  // (recalced in totals step below first, then push)
+
+  // ── Step 6: Note 21 audit fees → Note 22 provision for audit ─────────────
+  const auditFees_cy = getVal('note21', 'audit_fees', 'value_cy');
+  const auditFees_py = getVal('note21', 'audit_fees', 'value_py');
+  setVal('note22', 'prov_audit', 'value_cy', auditFees_cy);
+  setVal('note22', 'prov_audit', 'value_py', auditFees_py);
+
+  // ── Step 7: Recalc all standard section totals ────────────────────────────
+  state.sections.forEach(sec => {
+    if (!sec.tableType || sec.tableType === 'standard') {
+      let scy = 0, spy = 0;
+      sec.rows.forEach(r => {
+        if (r.isTotal) {
+          r.value_cy = scy;
+          r.value_py = spy;
+          scy = 0; spy = 0;
+        } else if (!r.isSubHeader && !r.isRichText) {
+          scy += r.value_cy;
+          spy += r.value_py;
+        }
+      });
+    }
+  });
+
+  // ── Step 8: Sub-note cascades (after totals recalced) ────────────────────
+  // Note 20_04 total → Note 20_03 prod_sup
+  const ps_total_cy = getVal('note20_04', 'ps_total', 'value_cy');
+  const ps_total_py = getVal('note20_04', 'ps_total', 'value_py');
+  setVal('note20_03', 'prod_sup', 'value_cy', ps_total_cy);
+  setVal('note20_03', 'prod_sup', 'value_py', ps_total_py);
+
+  // Note 20_02 mat_total → Note 20_01 mat_used
+  const mat_cy = getVal('note20_02', 'mat_total', 'value_cy');
+  const mat_py = getVal('note20_02', 'mat_total', 'value_py');
+  setVal('note20_01', 'mat_used', 'value_cy', mat_cy);
+  setVal('note20_01', 'mat_used', 'value_py', mat_py);
+
+  // Note 20_03 total → Note 20_01 prod_oh
+  const oh_cy = getVal('note20_03', 'prod_oh_total', 'value_cy');
+  const oh_py = getVal('note20_03', 'prod_oh_total', 'value_py');
+  setVal('note20_01', 'prod_oh', 'value_cy', oh_cy);
+  setVal('note20_01', 'prod_oh', 'value_py', oh_py);
+
+  // Note 20_01 total → Note 20 cop
+  const cop_cy = getVal('note20_01', 'cop_total', 'value_cy');
+  const cop_py = getVal('note20_01', 'cop_total', 'value_py');
+  setVal('note20', 'cop', 'value_cy', cop_cy);
+  setVal('note20', 'cop', 'value_py', cop_py);
+
+  // ── Re-run totals after cascades ─────────────────────────────────────────
+  state.sections.forEach(sec => {
+    if (!sec.tableType || sec.tableType === 'standard') {
+      let scy = 0, spy = 0;
+      sec.rows.forEach(r => {
+        if (r.isTotal) {
+          r.value_cy = scy;
+          r.value_py = spy;
+          scy = 0; spy = 0;
+        } else if (!r.isSubHeader && !r.isRichText) {
+          scy += r.value_cy;
+          spy += r.value_py;
+        }
+      });
+    }
+  });
+
+  // ── Step 9: Tax calculation (Bangladesh rule) ─────────────────────────────
+  const rev_cy = getVal('note19', 'net_revenue', 'value_cy');
+  const pbt_cy = getVal('note25_01', 'pbt', 'value_cy');
+  const tax_cy = Math.max(rev_cy * state.taxConfig.rateOnRevenue_cy, pbt_cy * state.taxConfig.rateOnIncome_cy);
+  const rev_py = getVal('note19', 'net_revenue', 'value_py');
+  const pbt_py = getVal('note25_01', 'pbt', 'value_py');
+  const tax_py = Math.max(rev_py * state.taxConfig.rateOnRevenue_py, pbt_py * state.taxConfig.rateOnIncome_py);
+  setVal('note21_ctp', 'current_tax', 'value_cy', tax_cy);
+  setVal('note21_ctp', 'current_tax', 'value_py', tax_py);
+  setVal('note25', 'current_tax', 'value_cy', tax_cy);
+  setVal('note25', 'current_tax', 'value_py', tax_py);
+
+  // ── Step 10: Note 21_ctp adjustment → Note 10 ait_adj ────────────────────
+  const adj_cy = getVal('note21_ctp', 'adjustment', 'value_cy');
+  const adj_py = getVal('note21_ctp', 'adjustment', 'value_py');
+  setVal('note10', 'ait_adj', 'value_cy', adj_cy);
+  setVal('note10', 'ait_adj', 'value_py', adj_py);
+
+  // ── Step 11: Shareholders → Note 12 ──────────────────────────────────────
+  const totalShares = state.shareholders.reduce((s, sh) => s + sh.shares, 0);
+  const totalAmt = totalShares * state.shareConfig.issuedFaceValue;
+  const authAmt = state.shareConfig.authorizedShares * state.shareConfig.authorizedFaceValue;
+  setVal('note12_01', 'auth_capital', 'value_cy', authAmt);
+  setVal('note12_01', 'auth_capital', 'value_py', authAmt);
+  setVal('note12_02', 'issued_capital', 'value_cy', totalAmt);
+  setVal('note12_02', 'issued_capital', 'value_py', totalAmt);
+
+  // ── Step 12: Loans totals → Note 15 ──────────────────────────────────────
+  const loanNC = state.loans.reduce((s, l) => s + l.nonCurrent_cy, 0);
+  const loanC = state.loans.reduce((s, l) => s + l.current_cy, 0);
+  const loanPY = state.loans.reduce((s, l) => s + l.total_py, 0);
+  setVal('note15', 'loan_grand', 'value_cy', loanNC + loanC);
+  setVal('note15', 'loan_grand', 'value_py', loanPY);
+
+  // UPAS
+  const upasNC = state.upasEntries.reduce((s, l) => s + l.nonCurrent_cy, 0);
+  const upasC = state.upasEntries.reduce((s, l) => s + l.current_cy, 0);
+  const upasPY = state.upasEntries.reduce((s, l) => s + l.total_py, 0);
+  setVal('note16', 'upas_grand', 'value_cy', upasNC + upasC);
+  setVal('note16', 'upas_grand', 'value_py', upasPY);
+
+  // ── Final total pass ──────────────────────────────────────────────────────
+  state.sections.forEach(sec => {
+    if (!sec.tableType || sec.tableType === 'standard') {
+      let scy = 0, spy = 0;
+      sec.rows.forEach(r => {
+        if (r.isTotal) {
+          r.value_cy = scy;
+          r.value_py = spy;
+          scy = 0; spy = 0;
+        } else if (!r.isSubHeader && !r.isRichText) {
+          scy += r.value_cy;
+          spy += r.value_py;
+        }
+      });
+    }
+  });
+};
+
+
+export { recalculate };
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/sections.ts
+// ==============================================================================
+import { Section, Row, PPE } from './types';
+import { v4 as uuidv4 } from 'uuid';
+// ─── INITIAL SECTIONS DATA ────────────────────────────────────────────────────
+const buildInitialSections = () => [
+  // ── NOTE 4: PPE ──────────────────────────────────────────────────────────
+  {
+    id: 'note04', noteNumber: '4', title: 'Property, plant and equipment',
+    suffixLabel: 'Property, plant and equipment', showDoubleLine: true,
+    rows: [
+      { id: 'ppe_cost', label: 'At cost (Annexure A)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'ppe_dep', label: 'Accumulated depreciation (Annexure A)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'ppe_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note04_01', noteNumber: '4.01', title: 'Category of assets',
+    suffixLabel: 'Category of assets', showDoubleLine: true,
+    rows: [
+      { id: 'ppe_active', label: 'Property, plant and equipment are in active use', value_cy: 0, value_py: 0 },
+      { id: 'ppe_auc', label: 'Assets under construction (AUC) or temporarily idle', value_cy: 0, value_py: 0 },
+      { id: 'ppe_fulldep', label: 'Fully depreciated assets still in use', value_cy: 0, value_py: 0 },
+      { id: 'ppe_hfs', label: 'Assets classified as held for sale', value_cy: 0, value_py: 0 },
+      { id: 'cat_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 5: INTANGIBLE ASSETS (was "Note 0" in demo) ─────────────────────
+  {
+    id: 'note05', noteNumber: '5', title: 'Intangible assets',
+    suffixLabel: 'Intangible assets', showDoubleLine: true,
+    rows: [
+      { id: 'intang_cost', label: 'At cost (Annexure A)', value_cy: 0, value_py: 0 },
+      { id: 'intang_amort', label: 'Accumulated amortization (Annexure A)', value_cy: 0, value_py: 0 },
+      { id: 'intang_nbv', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 6: INVENTORIES ───────────────────────────────────────────────────
+  {
+    id: 'note06', noteNumber: '6', title: 'Inventories',
+    suffixLabel: 'Inventories', showDoubleLine: true,
+    rows: [
+      { id: 'fg', label: 'Finished goods', value_cy: 0, value_py: 0 },
+      { id: 'wip', label: 'Work-in-progress', value_cy: 0, value_py: 0 },
+      { id: 'rm', label: 'Raw materials', value_cy: 0, value_py: 0 },
+      { id: 'pm', label: 'Packing materials', value_cy: 0, value_py: 0 },
+      { id: 'prod_supplies', label: 'Production supplies and spare parts', value_cy: 0, value_py: 0 },
+      { id: 'inv_sub', label: '', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'iit', label: 'Inventory-in-transit — raw materials', value_cy: 0, value_py: 0 },
+      { id: 'inv_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 7: TRADE RECEIVABLES ─────────────────────────────────────────────
+  {
+    id: 'note07', noteNumber: '7', title: 'Trade and other receivables',
+    suffixLabel: 'Trade and other receivables', showDoubleLine: true,
+    rows: [
+      { id: 'trade_rec', label: 'Trade receivable', value_cy: 0, value_py: 0 },
+      { id: 'other_rec', label: 'Other receivables', value_cy: 0, value_py: 0 },
+      { id: 'secured_rec', label: 'Secured receivables (cheque on hand)', value_cy: 0, value_py: 0 },
+      { id: 'prov_bad', label: 'Provision for bad and doubtful debts', value_cy: 0, value_py: 0 },
+      { id: 'rec_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 8: ADVANCES ──────────────────────────────────────────────────────
+  {
+    id: 'note08', noteNumber: '8', title: 'Advances, deposits and prepayments',
+    suffixLabel: 'Advances, deposits and prepayments', showDoubleLine: true,
+    rows: [
+      { id: 'adv_purchase', label: 'Advance against purchases', value_cy: 0, value_py: 0 },
+      { id: 'adv_rent', label: 'Advance office rent', value_cy: 0, value_py: 0 },
+      { id: 'adv_vat', label: 'Advance for VAT', value_cy: 0, value_py: 0 },
+      { id: 'dep_bttb', label: 'Deposit with BTTB', value_cy: 0, value_py: 0 },
+      { id: 'emp_loan', label: 'Employee loan', value_cy: 0, value_py: 0 },
+      { id: 'prepaid', label: 'Prepaid expense', value_cy: 0, value_py: 0 },
+      { id: 'adv_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note08_01', noteNumber: '8.01', title: 'Advance for VAT',
+    suffixLabel: 'Advance for VAT', showDoubleLine: true,
+    rows: [
+      { id: 'vat_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
+      { id: 'vat_purchase', label: 'VAT on purchase', value_cy: 0, value_py: 0 },
+      { id: 'vat_challan', label: 'VAT deposited by challan', value_cy: 0, value_py: 0 },
+      { id: 'vat_payable', label: 'VAT payable on bills/invoiced', value_cy: 0, value_py: 0 },
+      { id: 'vat_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 9: INVESTMENTS IN FINANCIAL ASSETS (was "Note 0" in demo) ────────
+  {
+    id: 'note09', noteNumber: '9', title: 'Investments in financial assets',
+    suffixLabel: 'Investments in financial assets', showDoubleLine: true,
+    rows: [
+      { id: 'inv_fdr', label: 'Investment in FDR', value_cy: 0, value_py: 0 },
+      { id: 'inv_shares', label: 'Investment in shares', value_cy: 0, value_py: 0 },
+      { id: 'inv_bonds', label: 'Investment in bonds / securities', value_cy: 0, value_py: 0 },
+      { id: 'inv_fin_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 10: ADVANCE INCOME TAX ───────────────────────────────────────────
+  {
+    id: 'note10', noteNumber: '10', title: 'Advance income tax',
+    suffixLabel: 'Advance income tax', showDoubleLine: true,
+    rows: [
+      { id: 'ait_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
+      { id: 'ait_import', label: 'AIT on import materials', value_cy: 0, value_py: 0 },
+      { id: 'ait_challan', label: 'Tax deposit by Challan', value_cy: 0, value_py: 0 },
+      { id: 'ait_goods', label: 'AIT on imported goods', value_cy: 0, value_py: 0 },
+      { id: 'tds_license', label: 'TDS on trade license', value_cy: 0, value_py: 0 },
+      { id: 'tds_vehicle', label: 'TDS on vehicle fitness (tax token)', value_cy: 0, value_py: 0 },
+      { id: 'ait_bank', label: 'AIT on bank interest income', value_cy: 0, value_py: 0 },
+      { id: 'ait_adj', label: 'Adjustment during the year (Note 21)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'ait_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 11: CASH AND CASH EQUIVALENTS ────────────────────────────────────
+  {
+    id: 'note11', noteNumber: '11', title: 'Cash and cash equivalents',
+    suffixLabel: 'Cash and cash equivalents', showDoubleLine: true,
+    rows: [
+      { id: 'cash_hand', label: 'Cash on hand', value_cy: 0, value_py: 0 },
+      { id: 'cash_at_bank', label: 'Cash at bank(s) (Note 11.01)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'cash_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note11_01', noteNumber: '11.01', title: 'Cash at bank(s)',
+    tableType: 'bank_account', rows: []
+  },
+  // ── NOTE 12: SHARE CAPITAL ────────────────────────────────────────────────
+  {
+    id: 'note12_01', noteNumber: '12.01', title: 'Authorized capital',
+    suffixLabel: 'Authorized capital', showDoubleLine: true,
+    rows: [
+      { id: 'auth_desc', label: 'Ordinary shares at face value', value_cy: 0, value_py: 0 },
+      { id: 'auth_capital', label: '', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
+    ]
+  },
+  {
+    id: 'note12_02', noteNumber: '12.02', title: 'Issued, subscribed, called up and paid up capital',
+    tableType: 'shareholder',
+    rows: [
+      { id: 'issued_desc', label: 'Ordinary shares at face value', value_cy: 0, value_py: 0 },
+      { id: 'issued_capital', label: '', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
+    ]
+  },
+  // ── NOTE 12.03: CALLS-IN-ARREAR (was "Note 0" in demo) ───────────────────
+  {
+    id: 'note12_03', noteNumber: '12.03', title: 'Calls-in-arrear',
+    suffixLabel: 'Calls-in-arrear', showDoubleLine: true,
+    rows: [
+      { id: 'calls_arrear', label: 'Calls-in-arrear', value_cy: 0, value_py: 0 },
+      { id: 'calls_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 13: REVALUATION SURPLUS ─────────────────────────────────────────
+  {
+    id: 'note13', noteNumber: '13', title: 'Revaluation surplus',
+    suffixLabel: 'Revaluation surplus', showDoubleLine: true,
+    rows: [
+      { id: 'reval_surplus', label: 'Revaluation surplus on land (freehold)', value_cy: 0, value_py: 0 },
+      { id: 'reval_dtl', label: 'Deferred tax thereon', value_cy: 0, value_py: 0 },
+      { id: 'reval_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 14: RETAINED EARNINGS ────────────────────────────────────────────
+  {
+    id: 'note14', noteNumber: '14', title: 'Retained earnings',
+    suffixLabel: 'Retained earnings', showDoubleLine: true,
+    rows: [
+      { id: 're_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
+      { id: 're_policy', label: 'Changes in accounting policy', value_cy: 0, value_py: 0 },
+      { id: 're_restated', label: 'Opening balance re-stated', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 're_income', label: 'Total comprehensive income for the year', value_cy: 0, value_py: 0 },
+      { id: 're_closing', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 15: BORROWINGS FROM BANK ─────────────────────────────────────────
+  {
+    id: 'note15', noteNumber: '15', title: 'Borrowings from bank',
+    tableType: 'loan',
+    rows: [
+      { id: 'loan_grand', label: 'Total', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
+    ]
+  },
+  // ── NOTE 16: UPAS LIABILITIES ─────────────────────────────────────────────
+  {
+    id: 'note16', noteNumber: '16', title: 'UPAS liabilities',
+    tableType: 'upas',
+    rows: [
+      { id: 'upas_grand', label: 'Total', value_cy: 0, value_py: 0, isTotal: true, crossNoteRef: true },
+    ]
+  },
+  // ── NOTE 17: DEFERRED TAX LIABILITIES ─────────────────────────────────────
+  {
+    id: 'note17_dtl', noteNumber: '17', title: 'Deferred tax liabilities',
+    suffixLabel: 'Deferred tax liabilities', showDoubleLine: true,
+    rows: [
+      { id: 'dtl_opening', label: 'Opening deferred tax liability', value_cy: 0, value_py: 0, locked: true },
+      { id: 'dtl_addition', label: 'Add: Addition during the year', value_cy: 0, value_py: 0 },
+      { id: 'dtl_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 18: FINANCIAL LIABILITIES WITH RELATED PARTIES (was "Note 0") ────
+  {
+    id: 'note18', noteNumber: '18', title: 'Financial liabilities with related parties',
+    suffixLabel: 'Financial liabilities with related parties', showDoubleLine: true,
+    rows: [
+      { id: 'rel_liab_1', label: 'Loan from directors', value_cy: 0, value_py: 0 },
+      { id: 'rel_liab_2', label: 'Loan from related companies', value_cy: 0, value_py: 0 },
+      { id: 'rel_liab_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 19: ADVANCE RECEIVED FROM CUSTOMERS (was "Note 0") ──────────────
+  {
+    id: 'note19_adv', noteNumber: '19', title: 'Advance received from customers',
+    suffixLabel: 'Advance received from customers', showDoubleLine: true,
+    rows: [
+      { id: 'adv_cust_1', label: 'Advance from trade customers', value_cy: 0, value_py: 0 },
+      { id: 'adv_cust_2', label: 'Advance for export orders', value_cy: 0, value_py: 0 },
+      { id: 'adv_cust_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 20: TRADE AND OTHER PAYABLES ─────────────────────────────────────
+  {
+    id: 'note20_pay', noteNumber: '20', title: 'Trade and other payables',
+    suffixLabel: 'Trade and other payables', showDoubleLine: true,
+    rows: [
+      { id: 'pay_rm', label: 'Payable for Raw materials', value_cy: 0, value_py: 0 },
+      { id: 'pay_pm', label: 'Payable for Packing materials', value_cy: 0, value_py: 0 },
+      { id: 'pay_transport', label: 'Payable for transport contractors', value_cy: 0, value_py: 0 },
+      { id: 'pay_other', label: 'Payable for other services', value_cy: 0, value_py: 0 },
+      { id: 'pay_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 21: CURRENT TAX PAYABLE ──────────────────────────────────────────
+  {
+    id: 'note21_ctp', noteNumber: '21', title: 'Current tax payable',
+    suffixLabel: 'Current tax payable', showDoubleLine: true,
+    rows: [
+      { id: 'ctp_opening', label: 'Opening balance', value_cy: 0, value_py: 0, locked: true },
+      { id: 'ctp_challan', label: 'Tax deposit by Challan', value_cy: 0, value_py: 0 },
+      { id: 'current_tax', label: 'Current tax for the year (Note 29)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'adjustment', label: 'Adjustment during the year', value_cy: 0, value_py: 0 },
+      { id: 'ctp_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 22: PROVISION FOR EXPENSE ────────────────────────────────────────
+  {
+    id: 'note22', noteNumber: '22', title: 'Provision for expense',
+    suffixLabel: 'Provision for expense', showDoubleLine: true,
+    rows: [
+      { id: 'prov_wages', label: 'Outstanding wages, salary and allowances', value_cy: 0, value_py: 0 },
+      { id: 'prov_prof', label: 'Provision for professional fees', value_cy: 0, value_py: 0 },
+      { id: 'prov_audit', label: 'Provision for audit fees', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'prov_vds', label: 'Provision for VDS on audit fees', value_cy: 0, value_py: 0 },
+      { id: 'prov_tds', label: 'Provision for TDS on audit fees', value_cy: 0, value_py: 0 },
+      { id: 'prov_legal', label: 'Provision for legal fees', value_cy: 0, value_py: 0 },
+      { id: 'prov_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 23: REVENUE ──────────────────────────────────────────────────────
+  {
+    id: 'note19', noteNumber: '23', title: 'Revenue',
+    suffixLabel: 'Revenue', showDoubleLine: true,
+    rows: [
+      { id: 'revenue', label: 'Sales/bill received', value_cy: 0, value_py: 0 },
+      { id: 'export', label: 'Export sales', value_cy: 0, value_py: 0 },
+      { id: 'disc_price', label: "Distributors' product price discount", value_cy: 0, value_py: 0 },
+      { id: 'disc_vol', label: "Distributors' volume discount", value_cy: 0, value_py: 0 },
+      { id: 'commission', label: 'Channel sale commission/rebate', value_cy: 0, value_py: 0 },
+      { id: 'vat_sales', label: 'VAT on sales', value_cy: 0, value_py: 0 },
+      { id: 'net_revenue', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 24: COST OF SALES ────────────────────────────────────────────────
+  {
+    id: 'note20', noteNumber: '24', title: 'Cost of sales',
+    suffixLabel: 'Cost of sales', showDoubleLine: true,
+    rows: [
+      { id: 'cos_open_fg', label: 'Opening inventory — Finished goods', value_cy: 0, value_py: 0, locked: true },
+      { id: 'cop', label: 'Cost of Production (Note 24.01)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'cos_subtotal', label: '', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'samples', label: 'Product sample costs', value_cy: 0, value_py: 0 },
+      { id: 'cos_close_fg', label: 'Closing inventory — FG (Note 6)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'cos_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note20_01', noteNumber: '24.01', title: 'Cost of Production',
+    suffixLabel: 'Cost of Production', showDoubleLine: true,
+    rows: [
+      { id: 'mat_used', label: 'Materials used in production (Note 24.02)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'prod_oh', label: 'Production overhead (Note 24.03)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'cop_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note20_02', noteNumber: '24.02', title: 'Materials used in production',
+    suffixLabel: 'Materials used in production', showDoubleLine: true,
+    rows: [
+      { id: 'rm_hdr', label: 'Raw materials', value_cy: 0, value_py: 0, isSubHeader: true },
+      { id: 'rm_open', label: 'Opening Raw materials', value_cy: 0, value_py: 0, locked: true },
+      { id: 'rm_purchase', label: 'Purchased during the year', value_cy: 0, value_py: 0 },
+      { id: 'rm_import', label: 'Import during the year', value_cy: 0, value_py: 0 },
+      { id: 'rm_transfer', label: 'Transfer in (inventory in transit)', value_cy: 0, value_py: 0 },
+      { id: 'rm_close', label: 'Closing Raw materials', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'rm_used', label: 'Raw materials used', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'pm_hdr', label: 'Packing materials', value_cy: 0, value_py: 0, isSubHeader: true },
+      { id: 'pm_open', label: 'Opening Packing materials', value_cy: 0, value_py: 0, locked: true },
+      { id: 'pm_purchase', label: 'Purchased during the year', value_cy: 0, value_py: 0 },
+      { id: 'pm_import', label: 'Import during the year', value_cy: 0, value_py: 0 },
+      { id: 'pm_close', label: 'Closing Packing materials', value_cy: 0, value_py: 0 },
+      { id: 'pm_used', label: 'Packing materials used', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'mat_total', label: 'Total materials used', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note20_03', noteNumber: '24.03', title: 'Production overhead',
+    suffixLabel: 'Production overhead', showDoubleLine: true,
+    rows: [
+      { id: 'wip_open', label: 'Opening Work-in-progress', value_cy: 0, value_py: 0, locked: true },
+      { id: 'mfg_hdr', label: 'Manufacturing overhead', value_cy: 0, value_py: 0, isSubHeader: true },
+      { id: 'elec_f', label: 'Electricity — Factory', value_cy: 0, value_py: 0 },
+      { id: 'wages_f', label: 'Wages — Factory', value_cy: 0, value_py: 0 },
+      { id: 'repair_f', label: 'Repair & Maintenance — Factory', value_cy: 0, value_py: 0 },
+      { id: 'insurance_f', label: 'Fire Insurance — Factory', value_cy: 0, value_py: 0 },
+      { id: 'gas_f', label: 'Gas bill — Factory', value_cy: 0, value_py: 0 },
+      { id: 'diesel_f', label: 'Diesel, Octane & Kerosene — Factory', value_cy: 0, value_py: 0 },
+      { id: 'conv_f', label: 'Conveyance — Factory', value_cy: 0, value_py: 0 },
+      { id: 'lab_f', label: 'Lab supplies — Factory', value_cy: 0, value_py: 0 },
+      { id: 'prod_sup', label: 'Production supplies used (Note 24.04)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'dep_factory', label: 'Depreciation expense (Annexure A)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'amort_f', label: 'Amortization expense (Annexure A)', value_cy: 0, value_py: 0 },
+      { id: 'mfg_sub', label: '', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'wip_close', label: 'Closing Work-in-progress (Note 6)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'prod_oh_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note20_04', noteNumber: '24.04', title: 'Production supplies and spare parts used',
+    suffixLabel: 'Production supplies and spare parts used', showDoubleLine: true,
+    rows: [
+      { id: 'ps_open', label: 'Opening Production supplies', value_cy: 0, value_py: 0, locked: true },
+      { id: 'ps_purchase', label: 'Spare parts purchased during the year', value_cy: 0, value_py: 0 },
+      { id: 'ps_close', label: 'Closing Production supplies (Note 6)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'ps_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 25: ADMIN EXPENSE ────────────────────────────────────────────────
+  {
+    id: 'note21', noteNumber: '25', title: 'Administrative expense',
+    suffixLabel: 'Administrative expense', showDoubleLine: true,
+    rows: [
+      { id: 'salary_a', label: 'Salary and allowances', value_cy: 0, value_py: 0 },
+      { id: 'rent_util', label: 'Rent and utilities', value_cy: 0, value_py: 0 },
+      { id: 'telecom', label: 'Telephone and mobile expenses', value_cy: 0, value_py: 0 },
+      { id: 'it_exp', label: 'Business communication and IT', value_cy: 0, value_py: 0 },
+      { id: 'travel_a', label: 'Travelling and conveyance', value_cy: 0, value_py: 0 },
+      { id: 'entertain', label: 'Entertainment expense', value_cy: 0, value_py: 0 },
+      { id: 'repairs_a', label: 'Repairs and maintenance', value_cy: 0, value_py: 0 },
+      { id: 'printing', label: 'Printing and stationery', value_cy: 0, value_py: 0 },
+      { id: 'prof_fees', label: 'Professional fees', value_cy: 0, value_py: 0 },
+      { id: 'audit_fees', label: 'Audit fees', value_cy: 0, value_py: 0 },
+      { id: 'dep_admin', label: 'Depreciation expense (Annexure A)', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'amort_a', label: 'Amortization expense (Annexure A)', value_cy: 0, value_py: 0 },
+      { id: 'adm_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 26: DISTRIBUTION COSTS ───────────────────────────────────────────
+  {
+    id: 'note26', noteNumber: '26', title: 'Distribution costs',
+    suffixLabel: 'Distribution costs', showDoubleLine: true,
+    rows: [
+      { id: 'comm_exp', label: 'Communication Expenses', value_cy: 0, value_py: 0 },
+      { id: 'marketing', label: 'Marketing & Selling Expense', value_cy: 0, value_py: 0 },
+      { id: 'travel_d', label: 'Travel Expenses', value_cy: 0, value_py: 0 },
+      { id: 'delivery', label: 'Delivery expenses', value_cy: 0, value_py: 0 },
+      { id: 'postage_d', label: 'Postage & Stamp', value_cy: 0, value_py: 0 },
+      { id: 'samples_d', label: 'Product sample costs', value_cy: 0, value_py: 0 },
+      { id: 'dist_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 27: OTHER INCOME (was "Note 0" in demo) ──────────────────────────
+  {
+    id: 'note27', noteNumber: '27', title: 'Other income',
+    suffixLabel: 'Other income', showDoubleLine: true,
+    rows: [
+      { id: 'bank_interest', label: 'Bank interest received', value_cy: 0, value_py: 0 },
+      { id: 'gain_assets', label: 'Gain on disposal of assets', value_cy: 0, value_py: 0 },
+      { id: 'misc_income', label: 'Miscellaneous income', value_cy: 0, value_py: 0 },
+      { id: 'other_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 28: FINANCE COSTS ────────────────────────────────────────────────
+  {
+    id: 'note23', noteNumber: '28', title: 'Finance costs',
+    suffixLabel: 'Finance costs', showDoubleLine: true,
+    rows: [
+      { id: 'int_cc', label: 'Interest on CC', value_cy: 0, value_py: 0 },
+      { id: 'int_time', label: 'Interest on Time Loan', value_cy: 0, value_py: 0 },
+      { id: 'int_lease_f', label: 'Interest on Factory Lease', value_cy: 0, value_py: 0 },
+      { id: 'int_ltr', label: 'Interest on LTR', value_cy: 0, value_py: 0 },
+      { id: 'int_uf', label: 'Interest on United Finance lease', value_cy: 0, value_py: 0 },
+      { id: 'int_ipdc', label: 'Interest on IPDC automobile finance', value_cy: 0, value_py: 0 },
+      { id: 'bank_charges', label: 'Bank charges', value_cy: 0, value_py: 0 },
+      { id: 'fc_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  // ── NOTE 29: INCOME TAX EXPENSE ───────────────────────────────────────────
+  {
+    id: 'note25', noteNumber: '29', title: 'Income tax expense',
+    suffixLabel: 'Income tax expense', showDoubleLine: true,
+    rows: [
+      { id: 'current_tax', label: 'Current tax expense', value_cy: 0, value_py: 0, crossNoteRef: true },
+      { id: 'deferred_tax', label: 'Deferred tax expense', value_cy: 0, value_py: 0 },
+      { id: 'tax_total', label: '', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+  {
+    id: 'note25_01', noteNumber: '29.01', title: 'Current tax for the year',
+    suffixLabel: 'Current tax', showDoubleLine: true,
+    rows: [
+      { id: 'pbt', label: 'Profit before tax', value_cy: 0, value_py: 0 },
+      { id: 'acc_dep', label: 'Accounting depreciation', value_cy: 0, value_py: 0 },
+      { id: 'adj_profit', label: 'Adjusted profit', value_cy: 0, value_py: 0, isTotal: true },
+      { id: 'tax_dep', label: 'Tax depreciation', value_cy: 0, value_py: 0 },
+      { id: 'taxable_inc', label: 'Taxable total Income', value_cy: 0, value_py: 0, isTotal: true },
+    ]
+  },
+];
+
+
+export { buildInitialSections };
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/Shared.tsx
+// ==============================================================================
+import React, { useState } from 'react';
+import { Trash2, ChevronDown, ChevronRight, Link as LinkIcon } from 'lucide-react';
+import { Row, Section, BankAccount, Shareholder, LoanEntry, UPASEntry } from './types';
+import { cn, formatBDT } from './utils';
+import { useStore } from './store';
+
+// ─── EDITABLE COMPONENTS ──────────────────────────────────────────────────────
+interface EditableLabelProps {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  disabled?: boolean;
+  multiline?: boolean;
+}
+
+const EditableLabel = ({ value, onChange, className = '', disabled = false, multiline = false }: EditableLabelProps) => {
+  const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState(value);
+  if (disabled) return <span className={className}>{value}</span>;
+  if (multiline && edit) return (
+    <textarea autoFocus value={draft} rows={3}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => { onChange(draft); setEdit(false); }}
+      className={cn("border border-blue-300 bg-blue-50 outline-none w-full p-1 text-sm rounded", className)} />
+  );
+  return edit ? (
+    <input autoFocus value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => { onChange(draft); setEdit(false); }}
+      onKeyDown={e => { if (e.key === 'Enter') { onChange(draft); setEdit(false); } }}
+      className={cn("border-b border-blue-400 bg-blue-50 outline-none min-w-[8rem]", className)} />
+  ) : (
+    <span onClick={() => { setDraft(value); setEdit(true); }}
+      title="Click to edit"
+      className={cn("cursor-text hover:bg-yellow-50 rounded px-0.5", className)}>
+      {value}
+    </span>
+  );
+};
+
+interface EditableNumberProps {
+  value: number;
+  onChange: (v: number) => void;
+  readOnly?: boolean;
+  className?: string;
+}
+
+const EditableNumber = ({ value, onChange, readOnly = false, className = '' }: EditableNumberProps) => {
+  const [edit, setEdit] = useState(false);
+  const [draft, setDraft] = useState('');
+  if (readOnly) return (
+    <span className={cn("text-right block w-32 tabular-nums", className)}>{formatBDT(value)}</span>
+  );
+  return edit ? (
+    <input autoFocus value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => { const n = parseFloat(draft.replace(/,/g, '')); onChange(isNaN(n) ? 0 : n); setEdit(false); }}
+      onKeyDown={e => { if (e.key === 'Enter') { const n = parseFloat(draft.replace(/,/g, '')); onChange(isNaN(n) ? 0 : n); setEdit(false); } }}
+      className={cn("border-b border-blue-400 bg-blue-50 outline-none text-right w-32 tabular-nums", className)} />
+  ) : (
+    <span onClick={() => { setDraft(String(value)); setEdit(true); }}
+      title="Click to edit"
+      className={cn("cursor-text text-right block w-32 hover:bg-yellow-50 rounded px-0.5 tabular-nums", className)}>
+      {formatBDT(value)}
+    </span>
+  );
+};
+
+
+
+// ─── NOTE ROW COMPONENT ───────────────────────────────────────────────────────
+const NoteRowComp: React.FC<{ row: Row; sId: string }> = ({ row, sId }) => {
+  const store = useStore();
+  const indent = row.indentLevel === 2 ? 'pl-20' : row.indentLevel === 1 ? 'pl-10' : 'pl-0';
+  const bold = (row.isTotal || row.isSubHeader) ? 'font-bold' : '';
+
+  if (row.isRichText) {
+    return (
+      <div className="py-2 text-sm text-gray-700 italic">
+        <EditableLabel multiline value={row.label}
+          onChange={v => store.updateRowLabel(sId, row.id, v)} />
+      </div>
+    );
+  }
+
+  if (row.isSubHeader) {
+    return (
+      <div className={cn(indent, bold, "mt-4 mb-1 text-gray-800 border-b border-gray-200 pb-0.5")}>
+        <EditableLabel value={row.label}
+          onChange={v => store.updateRowLabel(sId, row.id, v)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-between py-0.5 group hover:bg-amber-50/50 rounded transition-colors">
+      <div className={cn("flex items-center flex-1 gap-1", indent, bold)}>
+        {row.crossNoteRef
+          ? <span className="flex items-center gap-1 text-gray-600">
+            <LinkIcon size={9} className="text-blue-400 shrink-0" />
+            {row.label}
+          </span>
+          : <>
+            <EditableLabel value={row.label}
+              onChange={v => store.updateRowLabel(sId, row.id, v)} />
+            {!row.isTotal && !row.locked && (
+              <button onClick={() => store.deleteRow(sId, row.id)}
+                className="ml-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 print:hidden transition-opacity">
+                <Trash2 size={10} />
+              </button>
+            )}
+            {row.locked && <span className="ml-1 text-[9px] text-gray-400">🔒</span>}
+          </>
+        }
+      </div>
+      <div className="flex gap-6">
+        <EditableNumber value={row.value_cy}
+          onChange={v => store.updateRow(sId, row.id, 'value_cy', v)}
+          readOnly={row.isTotal || !!row.crossNoteRef}
+          className={cn(bold, row.isTotal && "border-t border-gray-600")} />
+        <EditableNumber value={row.value_py}
+          onChange={v => store.updateRow(sId, row.id, 'value_py', v)}
+          readOnly={row.isTotal || !!row.crossNoteRef}
+          className={cn(bold, row.isTotal && "border-t border-gray-600")} />
+      </div>
+    </div>
+  );
+};
+
+
+
+// ─── DYNAMIC TABLE COMPONENTS ─────────────────────────────────────────────────
+const BankAccountTable = () => {
+  const store = useStore();
+  const thCls = "text-left py-1 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-300";
+  const tdCls = "py-0.5 px-2";
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr>
+            <th className={thCls}>Bank Name</th>
+            <th className={thCls}>Account No.</th>
+            <th className={cn(thCls, "text-right w-32")}>CY</th>
+            <th className={cn(thCls, "text-right w-32")}>PY</th>
+            <th className={cn(thCls, "w-6 print:hidden")}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {store.bankAccounts.map(ba => (
+            <tr key={ba.id} className="group hover:bg-amber-50/50 border-b border-gray-100">
+              <td className={tdCls}><EditableLabel value={ba.bankName} onChange={v => store.updateTableItem('bank', ba.id, 'bankName', v)} /></td>
+              <td className={tdCls}><EditableLabel value={ba.accountNo} onChange={v => store.updateTableItem('bank', ba.id, 'accountNo', v)} /></td>
+              <td className={tdCls}><EditableNumber value={ba.value_cy} onChange={v => store.updateTableItem('bank', ba.id, 'value_cy', v)} /></td>
+              <td className={tdCls}><EditableNumber value={ba.value_py} onChange={v => store.updateTableItem('bank', ba.id, 'value_py', v)} /></td>
+              <td className={cn(tdCls, "print:hidden")}>
+                <button onClick={() => store.deleteTableItem('bank', ba.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="font-bold border-t-2 border-gray-700">
+            <td colSpan={2} className={tdCls}>Total</td>
+            <td className={tdCls}><span className="text-right block w-32 tabular-nums">{formatBDT(store.bankAccounts.reduce((s, b) => s + b.value_cy, 0))}</span></td>
+            <td className={tdCls}><span className="text-right block w-32 tabular-nums">{formatBDT(store.bankAccounts.reduce((s, b) => s + b.value_py, 0))}</span></td>
+          </tr>
+        </tfoot>
+      </table>
+      <button onClick={() => store.addTableItem('bank')} className="mt-2 text-xs text-blue-600 hover:text-blue-800 print:hidden">+ Add bank account</button>
+    </div>
+  );
+};
+
+const ShareholderTable = () => {
+  const store = useStore();
+  const totalShares = store.shareholders.reduce((s, sh) => s + sh.shares, 0);
+  const thCls = "text-left py-1 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-300";
+  const tdCls = "py-0.5 px-2";
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr>
+            <th className={thCls}>Name of Shareholders</th>
+            <th className={cn(thCls, "text-right")}>No. of Shares</th>
+            <th className={cn(thCls, "text-right")}>% Holding</th>
+            <th className={cn(thCls, "text-right w-32")}>Amount (BDT)</th>
+            <th className={cn(thCls, "w-6 print:hidden")}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {store.shareholders.map(sh => {
+            const ratio = totalShares > 0 ? sh.shares / totalShares : 0;
+            const amount = sh.shares * store.shareConfig.issuedFaceValue;
+            return (
+              <tr key={sh.id} className="group hover:bg-amber-50/50 border-b border-gray-100">
+                <td className={tdCls}><EditableLabel value={sh.name} onChange={v => store.updateTableItem('sh', sh.id, 'name', v)} /></td>
+                <td className={cn(tdCls, "text-right")}><EditableNumber value={sh.shares} onChange={v => store.updateTableItem('sh', sh.id, 'shares', v)} /></td>
+                <td className={cn(tdCls, "text-right tabular-nums")}>{(ratio * 100).toFixed(3)}%</td>
+                <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(amount)}</td>
+                <td className={cn(tdCls, "print:hidden")}>
+                  <button onClick={() => store.deleteTableItem('sh', sh.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="font-bold border-t-2 border-gray-700">
+            <td className={tdCls}>Total</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{totalShares.toLocaleString('en-IN')}</td>
+            <td className={cn(tdCls, "text-right")}>100%</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(totalShares * store.shareConfig.issuedFaceValue)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <button onClick={() => store.addTableItem('sh')} className="mt-2 text-xs text-blue-600 hover:text-blue-800 print:hidden">+ Add shareholder</button>
+    </div>
+  );
+};
+
+const LoanTable = ({ type }) => {
+  const store = useStore();
+  const items = type === 'loan' ? store.loans : store.upasEntries;
+  const thCls = "text-left py-1 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-300";
+  const tdCls = "py-0.5 px-2";
+  const totalNC = items.reduce((s, l) => s + l.nonCurrent_cy, 0);
+  const totalC = items.reduce((s, l) => s + l.current_cy, 0);
+  const totalPY = items.reduce((s, l) => s + l.total_py, 0);
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr>
+            <th className={thCls}>Lender</th>
+            <th className={thCls}>A/C No.</th>
+            <th className={cn(thCls, "text-right w-28")}>Non-current</th>
+            <th className={cn(thCls, "text-right w-28")}>Current</th>
+            <th className={cn(thCls, "text-right w-28")}>Total CY</th>
+            <th className={cn(thCls, "text-right w-28")}>Total PY</th>
+            <th className={cn(thCls, "w-6 print:hidden")}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(loan => (
+            <tr key={loan.id} className="group hover:bg-amber-50/50 border-b border-gray-100">
+              <td className={tdCls}><EditableLabel value={loan.lenderName} onChange={v => store.updateTableItem(type, loan.id, 'lenderName', v)} /></td>
+              <td className={tdCls}><EditableLabel value={loan.accountNo} onChange={v => store.updateTableItem(type, loan.id, 'accountNo', v)} /></td>
+              <td className={tdCls}><EditableNumber value={loan.nonCurrent_cy} onChange={v => store.updateTableItem(type, loan.id, 'nonCurrent_cy', v)} /></td>
+              <td className={tdCls}><EditableNumber value={loan.current_cy} onChange={v => store.updateTableItem(type, loan.id, 'current_cy', v)} /></td>
+              <td className={cn(tdCls, "text-right tabular-nums font-medium")}>{formatBDT(loan.nonCurrent_cy + loan.current_cy)}</td>
+              <td className={tdCls}><EditableNumber value={loan.total_py} onChange={v => store.updateTableItem(type, loan.id, 'total_py', v)} /></td>
+              <td className={cn(tdCls, "print:hidden")}>
+                <button onClick={() => store.deleteTableItem(type, loan.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="font-bold border-t-2 border-gray-700">
+            <td colSpan={2} className={tdCls}>Total</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(totalNC)}</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(totalC)}</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(totalNC + totalC)}</td>
+            <td className={cn(tdCls, "text-right tabular-nums")}>{formatBDT(totalPY)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <button onClick={() => store.addTableItem(type)} className="mt-2 text-xs text-blue-600 hover:text-blue-800 print:hidden">
+        + Add {type === 'loan' ? 'loan' : 'UPAS'} entry
+      </button>
+    </div>
+  );
+};
+
+
+
+// ─── NOTE SECTION COMPONENT ───────────────────────────────────────────────────
+const NoteSectionComp = ({ section }: { section: Section }) => {
+  const store = useStore();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const showAddRow = !section.tableType && !['note30_01', 'note30_02'].includes(section.id);
+  const hasValues = section.rows.some(r => !r.isTotal && !r.isSubHeader && !r.isRichText);
+
+  return (
+    <div className="mb-10 break-inside-avoid">
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-3 pb-1 border-b border-gray-300">
+        <button onClick={() => setCollapsed(!collapsed)}
+          className="text-gray-400 hover:text-gray-600 print:hidden shrink-0">
+          {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+        </button>
+        <span className="font-bold text-base text-gray-800 min-w-[3rem] shrink-0">
+          {section.noteNumber}.
+        </span>
+        <EditableLabel
+          value={section.title}
+          onChange={v => store.updateSectionTitle(section.id, v)}
+          className="font-bold text-base text-gray-800 uppercase tracking-wide"
+        />
+      </div>
+
+      {!collapsed && (
+        <>
+          {/* Standard rows */}
+          {(!section.tableType || section.tableType === 'standard') && (
+            <div className="space-y-0 pl-4">
+              {section.rows.map(r => (
+                <NoteRowComp key={r.id} row={r} sId={section.id} />
+              ))}
+            </div>
+          )}
+
+          {/* Special table types */}
+          {section.tableType === 'bank_account' && <BankAccountTable />}
+          {section.tableType === 'shareholder' && (
+            <>
+              <div className="space-y-0 pl-4">
+                {section.rows.map(r => <NoteRowComp key={r.id} row={r} sId={section.id} />)}
+              </div>
+              <ShareholderTable />
+            </>
+          )}
+          {section.tableType === 'loan' && (
+            <>
+              <LoanTable type="loan" />
+              <div className="space-y-0 pl-4 mt-2">
+                {section.rows.filter(r => r.isTotal).map(r => <NoteRowComp key={r.id} row={r} sId={section.id} />)}
+              </div>
+            </>
+          )}
+          {section.tableType === 'upas' && (
+            <>
+              <LoanTable type="upas" />
+              <div className="space-y-0 pl-4 mt-2">
+                {section.rows.filter(r => r.isTotal).map(r => <NoteRowComp key={r.id} row={r} sId={section.id} />)}
+              </div>
+            </>
+          )}
+
+          {/* Double underline */}
+          {section.showDoubleLine && (
+            <div className="flex justify-end mt-1 relative">
+              <div className="flex gap-6">
+                <div className="w-32 border-t-2 border-double border-gray-800"></div>
+                <div className="w-32 border-t-2 border-double border-gray-800"></div>
+              </div>
+              {section.suffixLabel && (
+                <span className="absolute left-[calc(100%+10px)] bottom-0 text-[10px] italic text-gray-500 whitespace-nowrap">
+                  {section.suffixLabel}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Add row button */}
+          {showAddRow && (
+            <button onClick={() => store.addRow(section.id)}
+              className="mt-1.5 text-xs text-blue-500 hover:text-blue-700 print:hidden flex items-center gap-1">
+              <span className="text-base leading-none">+</span> Add item
+            </button>
+          )}
+        </>
       )}
     </div>
   );
+};
 
-  const contextValue = {
-    data,
-    formatDisplay,
-    parseValue,
-    renderNoteHeader,
-    renderRow,
-    renderTotalLine,
-    renderDoubleTotalLine
-  };
+
+
+export { EditableLabel, EditableNumber, NoteRowComp, BankAccountTable, ShareholderTable, LoanTable, NoteSectionComp };
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/utils.ts
+// ==============================================================================
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+const cn = (...cls: any[]) => cls.filter(Boolean).join(' ');
+
+const formatBDT = (num: number) => {
+  if (num === 0) return '-';
+  const abs = Math.abs(num);
+  const formatted = abs.toLocaleString('en-IN', { maximumFractionDigits: 0, minimumFractionDigits: 0 });
+  return num < 0 ? `(${formatted})` : formatted;
+};
+
+
+export { cn, formatBDT };
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/index.ts
+// ==============================================================================
+export { Note04 } from './notes/Note04';
+export { Note0401 } from './notes/Note0401';
+export { Note05 } from './notes/Note05';
+export { Note06 } from './notes/Note06';
+export { Note07 } from './notes/Note07';
+export { Note08 } from './notes/Note08';
+export { Note0801 } from './notes/Note0801';
+export { Note09 } from './notes/Note09';
+export { Note10 } from './notes/Note10';
+export { Note11 } from './notes/Note11';
+export { Note1101 } from './notes/Note1101';
+export { Note1201 } from './notes/Note1201';
+export { Note1202 } from './notes/Note1202';
+export { Note1203 } from './notes/Note1203';
+export { Note13 } from './notes/Note13';
+export { Note14 } from './notes/Note14';
+export { Note15 } from './notes/Note15';
+export { Note16 } from './notes/Note16';
+export { Note17dtl } from './notes/Note17dtl';
+export { Note18 } from './notes/Note18';
+export { Note19adv } from './notes/Note19adv';
+export { Note20pay } from './notes/Note20pay';
+export { Note21ctp } from './notes/Note21ctp';
+export { Note22 } from './notes/Note22';
+export { Note19 } from './notes/Note19';
+export { Note20 } from './notes/Note20';
+export { Note2001 } from './notes/Note2001';
+export { Note2002 } from './notes/Note2002';
+export { Note2003 } from './notes/Note2003';
+export { Note2004 } from './notes/Note2004';
+export { Note21 } from './notes/Note21';
+export { Note26 } from './notes/Note26';
+export { Note27 } from './notes/Note27';
+export { Note23 } from './notes/Note23';
+export { Note25 } from './notes/Note25';
+export { Note2501 } from './notes/Note2501';
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/ConfigPanel.tsx
+// ==============================================================================
+import React, { useState } from 'react';
+import { Layout } from 'lucide-react';
+import { useStore } from './store';
+import { cn } from './utils';
+
+// ─── CONFIG PANEL ─────────────────────────────────────────────────────────────
+const ConfigPanel = ({ onClose }: { onClose: () => void }) => {
+  const store = useStore();
+  const inputCls = "w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400";
+  const labelCls = "text-xs text-gray-500 font-medium uppercase tracking-wide mb-1 block";
 
   return (
-    <N4_13Context.Provider value={contextValue}>
-      <div className="w-full bg-white p-8 font-serif text-[11px] leading-tight text-black">
-        <div className="max-w-4xl mx-auto border border-blue-800 p-1 min-h-full">
-          <div className="min-w-[600px]">
-            {/* Header Section */}
-          <div className="border-b-2 border-blue-900 mb-1 pb-1">
-            <h1 className="font-bold text-base">{data.company}</h1>
-            <p className="text-xs">{data.addr}</p>
-          </div>
-
-          <div className="flex justify-end mb-4">
-            <div className="text-right">
-              <p className="font-bold border-b border-black inline-block px-8">In Bangladesh Taka</p>
-              <div className="flex gap-8 mt-1">
-                <span className="w-24 text-center font-bold border-b border-black">{getFormattedDate(data.reportingDate)}</span>
-                <span className="w-24 text-center font-bold border-b border-black">{getFormattedDate(data.startDate)}</span>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center print:hidden">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-5 border-b">
+          <h2 className="text-lg font-bold">Configuration</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><span className="text-xl">×</span></button>
+        </div>
+        <div className="p-5 grid grid-cols-2 gap-6">
+          {/* Company */}
+          <div className="col-span-2">
+            <h3 className="font-semibold text-sm mb-3 text-gray-700">Company Information</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Company Name</label>
+                <input className={inputCls} value={store.company.companyName} onChange={e => store.updateConfig('company', 'companyName', e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Address</label>
+                <input className={inputCls} value={store.company.address} onChange={e => store.updateConfig('company', 'address', e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Reporting Date</label>
+                <input className={inputCls} value={store.company.reportingDateLabel} onChange={e => store.updateConfig('company', 'reportingDateLabel', e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Prior Year Date</label>
+                <input className={inputCls} value={store.company.priorDateLabel} onChange={e => store.updateConfig('company', 'priorDateLabel', e.target.value)} />
               </div>
             </div>
           </div>
 
-          <Note4 ppeTotals={ppeTotals} />
-          <Note5 />
-          <Note6 />
-          <Note7 />
-          <Note8 />
-          <Note9 />
-          <Note10 />
-          <Note11 />
-          <Note12 />
-          <Note13 />
-          <Note14 />
-          <Note15 />
-          <Note16 />
-          <Note17 />
-          <Note18 />
-          <Note19 />
-          <Note20 />
-          <Note21 />
-          <Note22 />
-          <Note23 />
-          <Note24 factoryDep={factoryDep} />
-          <Note25 adminDep={adminDep} />
-          <Note26 />
-          <Note27 />
-          <Note28 />
-          <Note29 />
+          {/* PPE */}
+          <div className="col-span-2">
+            <h3 className="font-semibold text-sm mb-3 text-gray-700">PPE / Annexure A</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                ['costClosing_cy', 'Cost Closing CY'], ['costOpening_py', 'Cost Opening PY'],
+                ['depClosing_cy', 'Dep Closing CY'], ['depOpening_py', 'Dep Opening PY'],
+                ['totalDepCharged_cy', 'Total Dep Charged'], ['adminDep_cy', 'Admin Dep Portion'],
+              ].map(([field, label]) => (
+                <div key={field}>
+                  <label className={labelCls}>{label}</label>
+                  <input type="number" className={inputCls} value={store.ppe[field]} onChange={e => store.updateConfig('ppe', field, Number(e.target.value))} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tax */}
+          <div>
+            <h3 className="font-semibold text-sm mb-3 text-gray-700">Tax Rates</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['rateOnRevenue_cy', 'On Revenue CY'], ['rateOnRevenue_py', 'On Revenue PY'],
+                ['rateOnIncome_cy', 'On Income CY'], ['rateOnIncome_py', 'On Income PY'],
+              ].map(([field, label]) => (
+                <div key={field}>
+                  <label className={labelCls}>{label}</label>
+                  <input type="number" step="0.001" className={inputCls} value={store.taxConfig[field]} onChange={e => store.updateConfig('taxConfig', field, Number(e.target.value))} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Share Config */}
+          <div>
+            <h3 className="font-semibold text-sm mb-3 text-gray-700">Share Capital Config</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['authorizedShares', 'Auth Shares'], ['authorizedFaceValue', 'Auth Face Value'],
+                ['issuedShares', 'Issued Shares'], ['issuedFaceValue', 'Issued Face Value'],
+              ].map(([field, label]) => (
+                <div key={field}>
+                  <label className={labelCls}>{label}</label>
+                  <input type="number" className={inputCls} value={store.shareConfig[field]} onChange={e => store.updateConfig('shareConfig', field, Number(e.target.value))} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </N4_13Context.Provider>
+    </div>
   );
 };
 
-================================================================================
-FILE: src/components/tabs/N4_13/Shared.tsx
-================================================================================
-import React, { createContext, useContext } from 'react';
-import { AuditReportData } from '../../../types';
 
-export interface N4_13ContextType {
-  data: AuditReportData;
-  formatDisplay: (num: number) => string;
-  parseValue: (val: string | number) => number;
-  renderNoteHeader: (num: string, title: string) => React.ReactNode;
-  renderRow: (label: string, val25?: string, val24?: string, isBold?: boolean, isItalic?: boolean, indent?: boolean) => React.ReactNode;
-  renderTotalLine: () => React.ReactNode;
-  renderDoubleTotalLine: (label?: string) => React.ReactNode;
-}
 
-export const N4_13Context = createContext<N4_13ContextType | null>(null);
+export { ConfigPanel };
 
-export const useN4_13 = () => {
-  const context = useContext(N4_13Context);
-  if (!context) throw new Error('useN4_13 must be used within N4_13Provider');
-  return context;
-};
-
-export const TableHeader: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <th className={`border border-black py-1 px-2 text-center font-bold ${className}`}>{children}</th>
-);
-
-export const TableCell: React.FC<{ children: React.ReactNode; className?: string; colSpan?: number }> = ({ children, className = '', colSpan }) => (
-  <td className={`border border-black py-1 px-2 ${className}`} colSpan={colSpan}>{children}</td>
-);
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note4.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note04.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note4: React.FC<{ ppeTotals: any }> = ({ ppeTotals }) => {
-  const { formatDisplay, renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-
-  return (
-    <>
-      {renderNoteHeader('4', 'Property, plant and equipment')}
-      {renderRow('At cost (Annexure A)', formatDisplay(ppeTotals.costClosing), formatDisplay(ppeTotals.costOpening))}
-      {renderRow('Accumulated depreciation (Annexure A)', formatDisplay(ppeTotals.depClosing), formatDisplay(ppeTotals.depOpening))}
-      {renderTotalLine()}
-      {renderRow('', formatDisplay(ppeTotals.costClosing - ppeTotals.depClosing), formatDisplay(ppeTotals.costOpening - ppeTotals.depOpening), true, false, false)}
-      {renderDoubleTotalLine('Property, plant and equipment')}
-
-      {renderNoteHeader('4.01', 'Category of assets')}
-      {renderRow('Property, plant and equipment are in active use')}
-      {renderRow('Assets under construction (AUC) or temporarily idle')}
-      {renderRow('Fully depreciated assets are still in use - cost (0)')}
-      {renderRow('Assets classified as held for sale or discontinued operation')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Category of assets')}
-    </>
-  );
+export const Note04: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note04'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note4;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note5.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note0401.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note5: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('5', 'Intangible assets')}
-      {renderRow('At cost (Annexure A)')}
-      {renderRow('Accumulated amortization (Annexure A)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Intangible assets')}
-    </>
-  );
+export const Note0401: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note04_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note5;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note6.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note05.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note6: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('6', 'Inventories')}
-      {renderRow('Finished goods')}
-      {renderRow('Work-in-progress')}
-      {renderRow('Raw materials')}
-      {renderRow('Packing materials')}
-      {renderRow('Production supplies and spare parts used')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderRow('Inventory-in-transit - raw materials')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Inventories')}
-    </>
-  );
+export const Note05: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note05'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note6;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note7.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note06.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note7: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('7', 'Trade receivables')}
-      {renderRow('Trade receivables')}
-      {renderRow('Provision for bad debts')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Trade receivables')}
-
-      {renderNoteHeader('7.01', 'Aging of trade receivables')}
-      {renderRow('Up to 3 months')}
-      {renderRow('Above 3 months but below 6 months')}
-      {renderRow('Above 6 months')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Aging of trade receivables')}
-    </>
-  );
+export const Note06: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note06'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note7;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note8.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note07.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note8: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('8', 'Advances, deposits and prepayments')}
-      {renderRow('Advances (Note: 8.01)')}
-      {renderRow('Deposits (Note: 8.02)')}
-      {renderRow('Prepayments (Note: 8.03)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Advances, deposits and prepayments')}
-
-      {renderNoteHeader('8.01', 'Advances')}
-      {renderRow('Advance salary')}
-      {renderRow('Advance to suppliers')}
-      {renderRow('Advance to others')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Advances')}
-
-      {renderNoteHeader('8.02', 'Deposits')}
-      {renderRow('Security deposit - Titas Gas')}
-      {renderRow('Security deposit - REB')}
-      {renderRow('Security deposit - BTCL')}
-      {renderRow('Bank guarantee margin')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Deposits')}
-
-      {renderNoteHeader('8.03', 'Prepayments')}
-      {renderRow('Insurance premium')}
-      {renderRow('Prepaid rent')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Prepayments')}
-    </>
-  );
+export const Note07: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note07'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note8;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note9.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note08.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note9: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('9', 'Investments in financial assets')}
-      {renderRow('Investment in FDR with SIBL')}
-      {renderRow('Investment in share - At Teen Agro Ltd')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Investments in financial assets')}
-    </>
-  );
+export const Note08: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note08'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note9;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note10.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note0801.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note10: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('10', 'Advance income tax')}
-      {renderRow('Opening balance')}
-      {renderRow('TDS on bill received/invoice/export')}
-      {renderRow('TDS on cash incentive')}
-      {renderRow('AIT on imported goods')}
-      {renderRow('TDS on trade license')}
-      {renderRow('TDS on vehicle fitness')}
-      {renderRow('AIT on bank interest income')}
-      {renderRow('Adjustment during the year (Note: 21)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Advance income tax')}
-    </>
-  );
+export const Note0801: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note08_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note10;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note11.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note09.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note11: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('11', 'Cash and cash equivalents')}
-      {renderRow('Cash in hand (Note: 11.01)')}
-      {renderRow('Cash at bank (Note: 11.02)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Cash and cash equivalents')}
-
-      {renderNoteHeader('11.01', 'Cash in hand')}
-      {renderRow('Cash in hand - Head office')}
-      {renderRow('Cash in hand - Factory')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Cash in hand')}
-
-      {renderNoteHeader('11.02', 'Cash at bank')}
-      {renderRow('SIBL, A/C No. 123456789')}
-      {renderRow('SIBL, A/C No. 987654321')}
-      {renderRow('SIBL, A/C No. 456789123')}
-      {renderRow('SIBL, A/C No. 789123456')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Cash at bank')}
-    </>
-  );
+export const Note09: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note09'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note11;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note12.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note10.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note12: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('12', 'Share capital')}
-      {renderRow('Authorized capital')}
-      {renderRow('10,000,000 ordinary shares of BDT 10 each')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Authorized capital')}
-
-      {renderNoteHeader('12.01', 'Issued, subscribed and paid-up capital')}
-      {renderRow('1,000,000 ordinary shares of BDT 10 each')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Issued, subscribed and paid-up capital')}
-
-      {renderNoteHeader('12.02', 'Shareholding position')}
-      <div className="ml-14 mt-2 text-[10px]">
-        <table className="w-full border-collapse border border-gray-400">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-400 p-1">Name of shareholders</th>
-              <th className="border border-gray-400 p-1">No. of shares</th>
-              <th className="border border-gray-400 p-1">% of holding</th>
-              <th className="border border-gray-400 p-1">Amount (BDT)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-gray-400 p-1">Mr. A</td>
-              <td className="border border-gray-400 p-1 text-right">500,000</td>
-              <td className="border border-gray-400 p-1 text-right">50%</td>
-              <td className="border border-gray-400 p-1 text-right">5,000,000</td>
-            </tr>
-            <tr>
-              <td className="border border-gray-400 p-1">Mr. B</td>
-              <td className="border border-gray-400 p-1 text-right">500,000</td>
-              <td className="border border-gray-400 p-1 text-right">50%</td>
-              <td className="border border-gray-400 p-1 text-right">5,000,000</td>
-            </tr>
-            <tr className="font-bold">
-              <td className="border border-gray-400 p-1">Total</td>
-              <td className="border border-gray-400 p-1 text-right">1,000,000</td>
-              <td className="border border-gray-400 p-1 text-right">100%</td>
-              <td className="border border-gray-400 p-1 text-right">10,000,000</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
+export const Note10: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note10'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note12;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note13.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note11.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note13: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('13', 'Retained earnings')}
-      {renderRow('Opening balance')}
-      {renderRow('Profit during the year')}
-      {renderRow('Dividend paid')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Retained earnings')}
-    </>
-  );
+export const Note11: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note11'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note13;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note14.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note1101.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note14: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('14', 'Long term borrowings')}
-      {renderRow('SIBL, HPSM A/C No. 123456789')}
-      {renderRow('SIBL, HPSM A/C No. 987654321')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Long term borrowings')}
-    </>
-  );
+export const Note1101: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note11_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note14;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note15.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note1201.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note15: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('15', 'Deferred tax liabilities')}
-      {renderRow('Opening balance')}
-      {renderRow('Adjustment during the year (Note: 21)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Deferred tax liabilities')}
-    </>
-  );
+export const Note1201: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note12_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note15;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note16.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note1202.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note16: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('16', 'Trade payables')}
-      {renderRow('Trade payables')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Trade payables')}
-    </>
-  );
+export const Note1202: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note12_02'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note16;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note17.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note1203.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note17: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('17', 'Short term borrowings')}
-      {renderRow('SIBL, SOD A/C No. 123456789')}
-      {renderRow('SIBL, SOD A/C No. 987654321')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Short term borrowings')}
-    </>
-  );
+export const Note1203: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note12_03'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note17;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note18.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note13.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note18: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('18', 'Current portion of long term borrowings')}
-      {renderRow('SIBL, HPSM A/C No. 123456789')}
-      {renderRow('SIBL, HPSM A/C No. 987654321')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Current portion of long term borrowings')}
-    </>
-  );
+export const Note13: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note13'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note18;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note19.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note14.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note19: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('19', 'Provision for expense')}
-      {renderRow('Salary and allowances')}
-      {renderRow('Electricity bill')}
-      {renderRow('Gas bill')}
-      {renderRow('Water bill')}
-      {renderRow('Telephone and internet bill')}
-      {renderRow('Audit fees')}
-      {renderRow('TDS on audit fees')}
-      {renderRow('VDS on audit fees')}
-      {renderRow('Provision for bad debts')}
-      {renderRow('Provision for gratuity')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Provision for expense')}
-    </>
-  );
+export const Note14: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note14'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note19;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note20.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note15.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note20: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('20', 'Liabilities for others')}
-      {renderRow('VAT current account')}
-      {renderRow('TDS on rent')}
-      {renderRow('VDS on rent')}
-      {renderRow('TDS on salary')}
-      {renderRow('TDS on suppliers')}
-      {renderRow('VDS on suppliers')}
-      {renderRow('TDS on professional fees')}
-      {renderRow('VDS on professional fees')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Liabilities for others')}
-    </>
-  );
+export const Note15: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note15'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note20;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note21.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note16.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note21: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('21', 'Provision for income tax')}
-      {renderRow('Opening balance')}
-      {renderRow('Provision during the year (Note: 29)')}
-      {renderRow('Adjustment during the year (Note: 10)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Provision for income tax')}
-    </>
-  );
+export const Note16: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note16'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note21;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note22.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note17dtl.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note22: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('22', 'Other liabilities')}
-      {renderRow('Security deposit - distributors')}
-      {renderRow('Security deposit - others')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Other liabilities')}
-    </>
-  );
+export const Note17dtl: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note17_dtl'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note22;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note23.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note18.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note23: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('23', 'Revenue')}
-      {renderRow('Sales/bill received')}
-      {renderRow('Export sales')}
-      {renderRow('Distributors\' product price discount')}
-      {renderRow('Distributors\' volume discount')}
-      {renderRow('Channel sale commission/rebate')}
-      {renderRow('Sales performance incentive rebate')}
-      {renderRow('VAT on sales')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Revenue')}
-    </>
-  );
+export const Note18: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note18'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note23;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note24.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note19.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note24: React.FC<{ factoryDep: number }> = ({ factoryDep }) => {
-  const { formatDisplay, renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('24', 'Cost of sales')}
-      {renderRow('Opening inventory - Finished goods')}
-      {renderRow('Cost of Production (Note: 24.01)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderRow('Product sample costs')}
-      {renderRow('Closing inventory - Finished goods (Note: 6)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Cost of sales')}
-
-      {renderNoteHeader('24.01', 'Cost of Production')}
-      {renderRow('Materials used in production (Note: 24.02)')}
-      {renderRow('Production overhead (Note: 24.03)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Cost of Production')}
-
-      {renderNoteHeader('24.02', 'Materials used in production')}
-      <div className="ml-14 mt-2 italic font-bold flex justify-center gap-12">
-        <span>At warehouse</span>
-        <span>In-transit</span>
-      </div>
-      {renderRow('Raw materials', '', '', true, true)}
-      <div className="border-t border-black ml-14"></div>
-      {renderRow('Opening Raw materials')}
-      {renderRow('Purchased during the year')}
-      {renderRow('Import during the year')}
-      {renderRow('Closing Raw materials')}
-      <div className="border-t border-black ml-14"></div>
-      {renderRow('Raw materials used', '-', '-', true)}
-      <div className="border-t border-black ml-14"></div>
-
-      <div className="mt-4"></div>
-      {renderRow('Packing materials', '', '', true, true)}
-      <div className="border-t border-black ml-14"></div>
-      {renderRow('Opening Packing materials')}
-      {renderRow('Purchased during the year')}
-      {renderRow('Import during the year')}
-      {renderRow('Closing Packing materials')}
-      <div className="border-t border-black ml-14"></div>
-      {renderRow('Packing materials used', '-', '-', true)}
-      <div className="border-t border-black ml-14"></div>
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Materials used in production')}
-
-      {renderNoteHeader('24.03', 'Production overhead')}
-      {renderRow('Opening Work-in-progress')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4 font-bold ml-14">Manufacturing overhead</div>
-      {renderRow('Wages')}
-      {renderRow('Factory rent')}
-      {renderRow('Electricity')}
-      {renderRow('Gas')}
-      {renderRow('Water')}
-      {renderRow('Machinery repairs and maintenance')}
-      {renderRow('Factory maintenance costs')}
-      {renderRow('Salary and allowances')}
-      {renderRow('Festival bonus')}
-      {renderRow('Fooding expenses')}
-      {renderRow('Production supplies and spare parts used (Note: 24.04)')}
-      {renderRow('Depreciation expense (Annexure A)', formatDisplay(factoryDep), '-')}
-      {renderRow('Amortization expense (Annexure A)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4"></div>
-      {renderRow('Closing Work-in-progress (Note: 6)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Production overhead')}
-
-      {renderNoteHeader('24.04', 'Production supplies and spare parts used')}
-      {renderRow('Opening Production supplies and spare parts')}
-      {renderRow('Spare parts purchased during the year')}
-      {renderRow('Closing Production supplies and spare parts (Note: 6)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Production supplies and spare parts used')}
-    </>
-  );
+export const Note19: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note19'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note24;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note25.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note19adv.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note25: React.FC<{ adminDep: number }> = ({ adminDep }) => {
-  const { formatDisplay, renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('25', 'Administrative expense')}
-      {renderRow('Salary and allowances')}
-      {renderRow('Directors\' remuneration')}
-      {renderRow('Rent and utilities')}
-      {renderRow('Telephone, internet and mobile expenses')}
-      {renderRow('Printing and stationery')}
-      {renderRow('Bad debt expense')}
-      {renderRow('Travelling and conveyance')}
-      {renderRow('Entertainment expense')}
-      {renderRow('Repairs and maintenance')}
-      {renderRow('Fees and renewals')}
-      {renderRow('Renewal fees')}
-      {renderRow('Travelling and conveyance')}
-      {renderRow('Water bill')}
-      {renderRow('Fooding allowances')}
-      {renderRow('Gain on sale of assets (25.01)')}
-      {renderRow('Professional fees')}
-      {renderRow('Audit fees')}
-      {renderRow('VDS on audit fees')}
-      {renderRow('TDS on audit fees')}
-      {renderRow('Depreciation expense (Annexure A)', formatDisplay(adminDep), '-')}
-      {renderRow('Amortization expense (Annexure A)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Administrative expense')}
-
-      {renderNoteHeader('25.01', 'Gain on sale of assets')}
-      <div className="ml-14 italic font-bold">a. Property, plant and equipment</div>
-      {renderRow('Sales proceeds of assets')}
-      {renderRow('Written down value [0-(0)]')}
-      {renderRow('(Loss)/gain')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Gain on sale of assets')}
-      
-      <div className="mt-4 ml-14 italic font-bold">b. Intangible assets</div>
-      {renderRow('Sales proceeds of assets')}
-      {renderRow('Written down value [0-(0)]')}
-      {renderRow('(Loss)/gain')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Gain on sale of assets')}
-    </>
-  );
+export const Note19adv: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note19_adv'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note25;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note26.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note20.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note26: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('26', 'Distribution costs')}
-      {renderRow('Delivery expenses')}
-      {renderRow('Carrying charges')}
-      {renderRow('Promotional expenses')}
-      {renderRow('Product sample costs (Note: 24)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Distribution costs')}
-    </>
-  );
+export const Note20: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note26;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note27.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note2001.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note27: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('27', 'Other income')}
-      {renderRow('Sales of newspaper')}
-      {renderRow('Bank interest received')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Other income')}
-    </>
-  );
+export const Note2001: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note27;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note28.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note2002.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note28: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('28', 'Finance costs')}
-      {renderRow('Interest on borrowings from bank-HPSM')}
-      {renderRow('Interest on borrowings from bank-overdraft')}
-      {renderRow('Bank charges')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Finance costs')}
-    </>
-  );
+export const Note2002: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20_02'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note28;
-
-================================================================================
-FILE: src/components/tabs/N4_13/Note29.tsx
-================================================================================
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note2003.tsx
+// ==============================================================================
 import React from 'react';
-import { useN4_13 } from './Shared';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
 
-const Note29: React.FC = () => {
-  const { renderNoteHeader, renderRow, renderTotalLine, renderDoubleTotalLine } = useN4_13();
-  return (
-    <>
-      {renderNoteHeader('29', 'Income tax expense')}
-      {renderRow('Current tax expense')}
-      {renderRow('Deferred tax expense (refundable adjustment)')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Income tax expense')}
-
-      {renderNoteHeader('29.01', 'Current tax for the year')}
-      {renderRow('Profit before tax')}
-      {renderRow('Accounting depreciation')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4"></div>
-      {renderRow('Tax depreciation')}
-      {renderRow('Taxable total Income')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4"></div>
-      {renderRow('Tax rate - on Revenue', '1.00%', '0.60%')}
-      {renderRow('- on Taxable total income', '27.50%', '27.50%')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4"></div>
-      {renderRow('Income tax - on Revenue')}
-      {renderRow('- on Taxable total income')}
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      
-      <div className="mt-4 font-bold">Tax expense</div>
-      {renderTotalLine()}
-      {renderRow('', '-', '-', true, false, false)}
-      {renderDoubleTotalLine('Current tax for the year')}
-    </>
-  );
+export const Note2003: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20_03'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
 };
 
-export default Note29;
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note2004.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note2004: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20_04'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note20pay.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note20pay: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note20_pay'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note21.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note21: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note21'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note21ctp.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note21ctp: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note21_ctp'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note22.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note22: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note22'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note23.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note23: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note23'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note25.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note25: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note25'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note2501.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note2501: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note25_01'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note26.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note26: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note26'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
+
+// ==============================================================================
+// FILE: src/components/tabs/N4_13/notes/Note27.tsx
+// ==============================================================================
+import React from 'react';
+import { useStore } from '../store';
+import { NoteSectionComp } from '../Shared';
+
+export const Note27: React.FC = () => {
+  const section = useStore(state => state.sections.find(s => s.id === 'note27'));
+  
+  if (!section) return null;
+  return <NoteSectionComp section={section} />;
+};
