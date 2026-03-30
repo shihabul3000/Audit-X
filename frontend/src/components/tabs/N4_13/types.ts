@@ -99,5 +99,6 @@ export interface Store {
   updateTableItem: (type: string, id: string, field: string, value: any) => void;
   deleteTableItem: (type: string, id: string) => void;
   updateSectionTitle: (sId: string, title: string) => void;
+  updatePPESummary: (summary: Partial<Store['ppe']>) => void;
   updateCompanyInfo: (field: keyof Company, value: string) => void;
 }

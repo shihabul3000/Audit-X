@@ -98,6 +98,11 @@ const useStore = create<Store>()(immer((set) => ({
     if (sec) sec.title = title;
   }),
 
+  updatePPESummary: (summary: Partial<Store['ppe']>) => set(state => {
+    state.ppe = { ...state.ppe, ...summary };
+    recalculate(state);
+  }),
+
   updateCompanyInfo: (field, value) => set(state => {
     state.company[field] = value;
   }),
