@@ -17,34 +17,34 @@ export const PNL: React.FC<{ data: any }> = ({ data }) => {
     store.sections.find(s => s.id === sectionId)?.noteNumber ?? '';
 
   // ── CY ────────────────────────────────────────────────────────────
-  const rev_cy      =  g('note19', 'net_revenue');
-  const cos_cy      = -Math.abs(g('note20', 'cos_total'));
-  const gp_cy       =  rev_cy + cos_cy;
-  const admin_cy    = -Math.abs(g('note21', 'adm_total'));
-  const dist_cy     = -Math.abs(g('note26', 'dist_total'));
-  const ebit_cy     =  gp_cy + admin_cy + dist_cy;
-  const other_cy    =  g('note27', 'other_total');
-  const fin_cy      = -Math.abs(g('note23', 'fc_total'));
-  const pbt_cy      =  ebit_cy + other_cy + fin_cy;
-  const tax_cy      = -Math.abs(g('note25', 'tax_total'));
-  const profit_cy   =  pbt_cy + tax_cy;
-  const reval_cy    =  g('note13', 'reval_total');
-  const totalC_cy   =  profit_cy + reval_cy;
+  const rev_cy = g('note19', 'net_revenue');
+  const cos_cy = -Math.abs(g('note20', 'cos_total'));
+  const gp_cy = rev_cy + cos_cy;
+  const admin_cy = -Math.abs(g('note21', 'adm_total'));
+  const dist_cy = -Math.abs(g('note26', 'dist_total'));
+  const ebit_cy = gp_cy + admin_cy + dist_cy;
+  const other_cy = g('note27', 'other_total');
+  const fin_cy = -Math.abs(g('note23', 'fc_total'));
+  const pbt_cy = ebit_cy + other_cy + fin_cy;
+  const tax_cy = -Math.abs(g('note25', 'tax_total'));
+  const profit_cy = pbt_cy + tax_cy;
+  const reval_cy = g('note13', 'reval_total');
+  const totalC_cy = profit_cy + reval_cy;
 
   // ── PY ────────────────────────────────────────────────────────────
-  const rev_py      =  g('note19', 'net_revenue', 'value_py');
-  const cos_py      = -Math.abs(g('note20', 'cos_total', 'value_py'));
-  const gp_py       =  rev_py + cos_py;
-  const admin_py    = -Math.abs(g('note21', 'adm_total', 'value_py'));
-  const dist_py     = -Math.abs(g('note26', 'dist_total', 'value_py'));
-  const ebit_py     =  gp_py + admin_py + dist_py;
-  const other_py    =  g('note27', 'other_total', 'value_py');
-  const fin_py      = -Math.abs(g('note23', 'fc_total', 'value_py'));
-  const pbt_py      =  ebit_py + other_py + fin_py;
-  const tax_py      = -Math.abs(g('note25', 'tax_total', 'value_py'));
-  const profit_py   =  pbt_py + tax_py;
-  const reval_py    =  g('note13', 'reval_total', 'value_py');
-  const totalC_py   =  profit_py + reval_py;
+  const rev_py = g('note19', 'net_revenue', 'value_py');
+  const cos_py = -Math.abs(g('note20', 'cos_total', 'value_py'));
+  const gp_py = rev_py + cos_py;
+  const admin_py = -Math.abs(g('note21', 'adm_total', 'value_py'));
+  const dist_py = -Math.abs(g('note26', 'dist_total', 'value_py'));
+  const ebit_py = gp_py + admin_py + dist_py;
+  const other_py = g('note27', 'other_total', 'value_py');
+  const fin_py = -Math.abs(g('note23', 'fc_total', 'value_py'));
+  const pbt_py = ebit_py + other_py + fin_py;
+  const tax_py = -Math.abs(g('note25', 'tax_total', 'value_py'));
+  const profit_py = pbt_py + tax_py;
+  const reval_py = g('note13', 'reval_total', 'value_py');
+  const totalC_py = profit_py + reval_py;
 
   // ── RENDER HELPERS ────────────────────────────────────────────────
   const PnlRow = ({
@@ -121,21 +121,21 @@ export const PNL: React.FC<{ data: any }> = ({ data }) => {
       </div>
 
       {/* P&L */}
-      <PnlRow label="Revenue"        sectionId="note19" cy={rev_cy}  py={rev_py} />
-      <PnlRow label="Cost of sales"  sectionId="note20" cy={cos_cy}  py={cos_py} />
+      <PnlRow label="Revenue" sectionId="note19" cy={rev_cy} py={rev_py} />
+      <PnlRow label="Cost of sales" sectionId="note20" cy={cos_cy} py={cos_py} />
       <TotalLine />
-      <PnlRow label="Gross profit"   cy={gp_cy}   py={gp_py}   bold indent={false} />
+      <PnlRow label="Gross profit" cy={gp_cy} py={gp_py} bold indent={false} />
       <DoubleLine />
 
       <PnlRow label="Administrative expense" sectionId="note21" cy={admin_cy} py={admin_py} />
-      <PnlRow label="Distribution costs"     sectionId="note26" cy={dist_cy}  py={dist_py} />
+      <PnlRow label="Distribution costs" sectionId="note26" cy={dist_cy} py={dist_py} />
       <TotalLine />
       <PnlRow label="Earnings before interest and tax (EBIT)"
         cy={ebit_cy} py={ebit_py} bold indent={false} />
       <DoubleLine />
 
-      <PnlRow label="Other income"   sectionId="note27" cy={other_cy} py={other_py} />
-      <PnlRow label="Finance costs"  sectionId="note23" cy={fin_cy}   py={fin_py} />
+      <PnlRow label="Other income" sectionId="note27" cy={other_cy} py={other_py} />
+      <PnlRow label="Finance costs" sectionId="note23" cy={fin_cy} py={fin_py} />
       <TotalLine />
       <PnlRow label="Profit before tax" cy={pbt_cy} py={pbt_py} bold indent={false} />
       <DoubleLine />
@@ -146,10 +146,12 @@ export const PNL: React.FC<{ data: any }> = ({ data }) => {
       <DoubleLine />
 
       {/* OCI */}
-      <div className="font-bold mt-4 mb-1">Other comprehensive income</div>
+      {/* <div className="font-bold mt-4 mb-1">Other comprehensive income
+
+      </div> */}
       <PnlRow
-        label="Gain on revaluation of property, plant and equipment net of tax"
-        sectionId="note13"
+        label="Other comprehensive income"
+        // sectionId="note13"
         cy={reval_cy}
         py={reval_py}
       />

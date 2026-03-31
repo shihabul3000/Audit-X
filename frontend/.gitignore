@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+allcode-copy-prompt.txt
+n4_13_complete_code.txt
