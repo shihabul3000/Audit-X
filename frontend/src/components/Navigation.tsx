@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Home } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Tab } from '../types';
 
 interface NavigationProps {
@@ -12,6 +13,13 @@ export const Navigation: React.FC<NavigationProps> = ({ tabs, activeTab, setActi
   return (
     <footer className="h-10 bg-[#F3F3F3] border-t border-gray-300 flex items-center px-1 shadow-inner">
       <div className="flex h-full items-center overflow-x-auto no-scrollbar">
+        <Link 
+          to="/" 
+          className="h-full flex items-center px-3 text-gray-500 hover:text-indigo-600 hover:bg-gray-200 transition-colors border-r border-gray-300"
+          title="Return to Home"
+        >
+          <Home size={16} />
+        </Link>
         {tabs.map((tab) => (
           <button
             key={tab}

@@ -19,6 +19,8 @@ import { PPE } from './components/tabs/PPE';
 import { P_Discussion } from './components/tabs/P_Discussion';
 import { PlaceholderTab } from './components/tabs/PlaceholderTab';
 
+import { LandingPage } from './components/landing/LandingPage';
+
 function AppContent() {
   const { data, updateData, isLoaded } = useAuditData();
   const location = useLocation();
@@ -88,7 +90,10 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
     </BrowserRouter>
   );
 }
