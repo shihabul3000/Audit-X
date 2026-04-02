@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { motion, AnimatePresence } from 'motion/react';
 import { Tab } from './types';
 import { useAuditData } from './hooks/useAuditData';
+import { useGlobalStoreSync } from './hooks/useGlobalStoreSync';
 import { Navigation } from './components/Navigation';
 import { Cover } from './components/tabs/Cover';
 import { SFP } from './components/tabs/SFP';
@@ -23,6 +24,8 @@ import { LandingPage } from './components/landing/LandingPage';
 
 function AppContent() {
   const { data, updateData, isLoaded } = useAuditData();
+  useGlobalStoreSync(data); // Ensures global sync runs continuously
+
   const location = useLocation();
   const navigate = useNavigate();
 

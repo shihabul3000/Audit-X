@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Store } from './types';
 import { recalculate } from './recalculate';
 import { buildInitialSections } from './sections';
+
 // ─── STORE ────────────────────────────────────────────────────────────────────
 const useStore = create<Store>()(immer((set) => ({
   company: {
