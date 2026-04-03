@@ -32,7 +32,7 @@ export const CTASection: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
-              to="/cover" 
+              to="/dashboard" 
               className="group flex w-full sm:w-auto items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-8 py-4 rounded-full text-base font-bold shadow-lg shadow-emerald-500/30 transition-all hover:shadow-xl hover:-translate-y-1"
             >
               Get Started Now

@@ -74,7 +74,7 @@ export const HowItWorksSection: React.FC = () => {
                <h4 className="text-2xl font-bold text-slate-900 mb-3">See it in action</h4>
                <p className="text-slate-600">Our seamless working dashboard requires zero configuration.</p>
             </div>
-            <a href="/cover" className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold transition-colors shrink-0">
+            <a href="/dashboard" className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold transition-colors shrink-0">
                <Play size={18} fill="currentColor" /> Watch Walkthrough
             </a>
           </div>

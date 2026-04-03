@@ -55,7 +55,7 @@ export const HeroSection: React.FC = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link 
-              to="/cover" 
+              to="/dashboard" 
               className="group flex w-full sm:w-auto items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-full text-base font-bold shadow-lg shadow-indigo-200 transition-all hover:shadow-xl hover:-translate-y-1"
             >
               Start Auditing

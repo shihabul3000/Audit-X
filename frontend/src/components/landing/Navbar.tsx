@@ -27,7 +27,7 @@ export const Navbar: React.FC = () => {
           {/* CTA */}
           <div className="flex items-center gap-4">
             <Link 
-              to="/cover" 
+              to="/dashboard" 
               className="group flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-0.5"
             >
               Launch App
