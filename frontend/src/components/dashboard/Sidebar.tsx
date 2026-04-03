@@ -6,7 +6,7 @@ export const Sidebar: React.FC = () => {
   const users = useAppStore(state => state.users);
   const currentUserId = useAppStore(state => state.currentUserId);
   const currentUser = users.find(u => u.id === currentUserId);
-  
+
   const activeCompanyId = useAppStore(state => state.activeCompanyId);
   const setActiveCompany = useAppStore(state => state.setActiveCompany);
   const createCompany = useAppStore(state => state.createCompany);
@@ -15,7 +15,7 @@ export const Sidebar: React.FC = () => {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
-  
+
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [editedCompanyName, setEditedCompanyName] = useState('');
 
@@ -56,7 +56,7 @@ export const Sidebar: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-400 uppercase tracking-wider">
             <span>Companies</span>
-            <button 
+            <button
               onClick={() => setIsCreating(!isCreating)}
               className="text-blue-400 hover:text-blue-300"
             >
@@ -85,7 +85,7 @@ export const Sidebar: React.FC = () => {
                 className="group relative"
               >
                 {editingCompanyId === company.id ? (
-                  <form 
+                  <form
                     onSubmit={e => handleUpdateCompany(e, company.id)}
                     className="flex items-center w-full bg-[#2a2a2a] border border-blue-500 rounded-lg p-1"
                   >
@@ -106,14 +106,13 @@ export const Sidebar: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => setActiveCompany(company.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none flex justify-between items-center ${
-                      activeCompanyId === company.id 
-                        ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20' 
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none flex justify-between items-center ${activeCompanyId === company.id
+                        ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20'
                         : 'text-gray-300 hover:bg-[#2a2a2a]'
-                    }`}
+                      }`}
                   >
                     <span className="truncate">{company.name}</span>
-                    <div 
+                    <div
                       onClick={(e) => startEditing(e, company.id, company.name)}
                       className={`p-1.5 rounded-md hover:bg-white/20 transition-all ${activeCompanyId === company.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                       title="Edit Company Name"
@@ -141,7 +140,7 @@ export const Sidebar: React.FC = () => {
             <p className="text-xs text-gray-400 truncate">{currentUser.email}</p>
           </div>
         </div>
-        <button 
+        <button
           onClick={logout}
           className="w-full py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
         >

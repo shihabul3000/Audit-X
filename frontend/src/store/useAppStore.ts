@@ -52,6 +52,8 @@ export interface AppState {
   startNewYear: (reportingDate: string) => void;
   setActiveYear: (id: string | null) => void;
   markYearCompleted: (id?: string) => void;
+  deleteFinancialYear: (yearId: string) => void;
+  deleteCompany: (companyId: string) => void;
 
   getActiveYearData: () => FullYearData;
   updateActiveYearAuditData: (updater: (draft: AuditReportData) => void) => void;
@@ -222,45 +224,59 @@ export const useAppStore = create<AppState>()(
         // Deep copy from the most recent year if exists, else defaults
         if (company.financialYears.length > 0) {
           const lastYear = company.financialYears[company.financialYears.length - 1];
-          // Use robust JSON stringify trick to forcefully deep clone and silently drop any non-serializable proxies/functions
-          newData = JSON.parse(JSON.stringify(lastYear.data));
-          
+          // Snapshot the PREVIOUS year's data for carry-forward reference
+          const prevData: FullYearData = JSON.parse(JSON.stringify(lastYear.data));
+
+          // Start with fresh defaults for the NEW year's data entry
+          newData = {
+            auditData: getDefaultAuditData(),
+            notesData: getDefaultNotesData()
+          };
+
           // 1. Update dates for continuity
           newData.auditData.reportingDate = reportingDate;
           newData.auditData.startDate = lastYear.reportingDate;
           newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-          newData.notesData.company.priorDateLabel = lastYear.data.notesData.company.reportingDateLabel;
+          newData.notesData.company.priorDateLabel = prevData.notesData.company.reportingDateLabel;
 
-          // 2. Map all Notes Data (value_cy -> value_py)
-          newData.notesData.sections.forEach(section => {
-            section.rows.forEach(row => {
-              // Move CY value to PY
-              row.value_py = row.value_cy;
-              // Reset CY value (unless it's an opening balance we handle below)
-              if (!row.locked && !row.isTotal) {
-                row.value_cy = 0;
+          // 2. Carry forward company info
+          newData.notesData.company.companyName = prevData.notesData.company.companyName;
+          newData.notesData.company.address = prevData.notesData.company.address;
+          newData.auditData.company = prevData.auditData.company;
+          newData.auditData.addr = prevData.auditData.addr;
+
+          // 3. For every section: move prev CY -> new PY, new CY stays 0
+          newData.notesData.sections.forEach(newSection => {
+            const prevSection = prevData.notesData.sections.find(s => s.id === newSection.id);
+            if (!prevSection) return;
+            newSection.rows.forEach(newRow => {
+              const prevRow = prevSection.rows.find(r => r.id === newRow.id);
+              if (prevRow) {
+                // Prior year column = what was the current year in the previous FY
+                newRow.value_py = prevRow.value_cy;
+                // Current year column starts blank (0)
+                newRow.value_cy = 0;
               }
             });
           });
 
-          // 3. Explicit Balance Carry-Forward (Opening Balances)
-          const findRow = (sId: string, rId: string) => 
+          // 4. Explicit Opening Balance Carry-Forward (Closing of prev year → Opening of new year)
+          const findRow = (sId: string, rId: string) =>
             newData.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
-          
           const prevRow = (sId: string, rId: string) =>
-            lastYear.data.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
+            prevData.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
 
           const carryMap = [
-            { s: 'note14',   from: 're_closing',    to: 're_opening' },   // Retained Earnings
-            { s: 'note20',   from: 'cos_close_fg',  to: 'cos_open_fg' },  // Finished Goods
-            { s: 'note20_02',from: 'rm_close',      to: 'rm_open' },      // Raw Materials
-            { s: 'note20_02',from: 'pm_close',      to: 'pm_open' },      // Packing Materials
-            { s: 'note20_03',from: 'wip_close',     to: 'wip_open' },     // Work-in-Progress
-            { s: 'note20_04',from: 'ps_close',      to: 'ps_open' },      // Production Supplies
-            { s: 'note08_01',from: 'vat_total',     to: 'vat_opening' },  // Advance for VAT
-            { s: 'note10',   from: 'ait_total',     to: 'ait_opening' },  // AIT opening
-            { s: 'note17_dtl',from: 'dtl_total',    to: 'dtl_opening' },  // DTL opening
-            { s: 'note21_ctp',from: 'ctp_total',    to: 'ctp_opening' },  // CTP opening
+            { s: 'note14', from: 're_closing', to: 're_opening' },       // Retained Earnings
+            { s: 'note20', from: 'cos_close_fg', to: 'cos_open_fg' },    // Finished Goods
+            { s: 'note20_02', from: 'rm_close', to: 'rm_open' },         // Raw Materials
+            { s: 'note20_02', from: 'pm_close', to: 'pm_open' },         // Packing Materials
+            { s: 'note20_03', from: 'wip_close', to: 'wip_open' },       // Work-in-Progress
+            { s: 'note20_04', from: 'ps_close', to: 'ps_open' },         // Production Supplies
+            { s: 'note08_01', from: 'vat_total', to: 'vat_opening' },    // Advance for VAT
+            { s: 'note10', from: 'ait_total', to: 'ait_opening' },       // AIT opening
+            { s: 'note17_dtl', from: 'dtl_total', to: 'dtl_opening' },   // DTL opening
+            { s: 'note21_ctp', from: 'ctp_total', to: 'ctp_opening' },   // CTP opening
           ];
 
           carryMap.forEach(m => {
@@ -271,33 +287,71 @@ export const useAppStore = create<AppState>()(
             }
           });
 
-          // 4. PPE Asset Carry-Forward
-          if (newData.auditData.ppe?.assets) {
-            newData.auditData.ppe.assets.forEach((asset, idx) => {
-              const lastAsset = lastYear.data.auditData.ppe.assets[idx];
-              if (lastAsset) {
-                // Calculate Cost and Dep closing from previous year
-                const co = parseFloat(lastAsset.costOpening) || 0;
-                const ca = parseFloat(lastAsset.costAddition) || 0;
-                const cd = parseFloat(lastAsset.costDisposal) || 0;
-                const costClosing = co + ca - cd;
+          // 5. PPE Asset Carry-Forward (Closing Cost/Dep → new Opening)
+          // Preserve asset list structure from previous year
+          newData.auditData.ppe.assets = prevData.auditData.ppe.assets.map(lastAsset => {
+            const co = parseFloat(lastAsset.costOpening) || 0;
+            const ca = parseFloat(lastAsset.costAddition) || 0;
+            const cd = parseFloat(lastAsset.costDisposal) || 0;
+            const costClosing = co + ca - cd;
 
-                const do_ = parseFloat(lastAsset.depOpening) || 0;
-                const dc = parseFloat(lastAsset.depCharged) || 0;
-                const da = parseFloat(lastAsset.depAdjustment) || 0;
-                const depClosing = do_ + dc + da;
+            const do_ = parseFloat(lastAsset.depOpening) || 0;
+            const dc = parseFloat(lastAsset.depCharged) || 0;
+            const da = parseFloat(lastAsset.depAdjustment) || 0;
+            const depClosing = do_ + dc + da;
 
-                // Set as current year's opening
-                asset.costOpening = costClosing ? costClosing.toString() : '';
-                asset.costAddition = '';
-                asset.costDisposal = '';
-                asset.depOpening = depClosing ? depClosing.toString() : '';
-                asset.depCharged = '';
-                asset.depAdjustment = '';
-              }
-            });
-          }
+            return {
+              ...lastAsset,
+              costOpening: costClosing ? costClosing.toString() : '',
+              costAddition: '',
+              costDisposal: '',
+              depOpening: depClosing ? depClosing.toString() : '',
+              depCharged: '',
+              depAdjustment: '',
+            };
+          });
+
+          // Update PPE header dates
+          const repYear = new Date(reportingDate).getFullYear();
+          newData.auditData.ppe.headerInfo = {
+            ...prevData.auditData.ppe.headerInfo,
+            asAtDate: `30 June ${repYear}`,
+            yearStart: `01 Jul ${String(repYear - 1).slice(2)}`,
+            yearEnd: `30 June ${String(repYear).slice(2)}`,
+          };
+
+          // 6. Table Carry-Forward: Bank Accounts (CY → PY, reset CY)
+          newData.notesData.bankAccounts = prevData.notesData.bankAccounts.map(acc => ({
+            ...acc,
+            value_py: acc.value_cy,
+            value_cy: 0,
+          }));
+
+          // 7. Table Carry-Forward: Loans (CY totals → PY, reset CY)
+          newData.notesData.loans = prevData.notesData.loans.map(loan => ({
+            ...loan,
+            total_py: loan.nonCurrent_cy + loan.current_cy,
+            nonCurrent_cy: 0,
+            current_cy: 0,
+          }));
+
+          // 8. Table Carry-Forward: UPAS (CY totals → PY, reset CY)
+          newData.notesData.upasEntries = prevData.notesData.upasEntries.map(upas => ({
+            ...upas,
+            total_py: upas.nonCurrent_cy + upas.current_cy,
+            nonCurrent_cy: 0,
+            current_cy: 0,
+          }));
+
+          // 9. Carry forward shareholders list (structural, no values to reset)
+          newData.notesData.shareholders = JSON.parse(JSON.stringify(prevData.notesData.shareholders));
+
+          // 10. Carry forward configs
+          newData.notesData.shareConfig = { ...prevData.notesData.shareConfig };
+          newData.notesData.taxConfig = { ...prevData.notesData.taxConfig };
+
         } else {
+
           newData = {
             auditData: getDefaultAuditData(),
             notesData: getDefaultNotesData()
@@ -335,6 +389,28 @@ export const useAppStore = create<AppState>()(
 
         if (year) {
           year.status = "completed";
+        }
+      }),
+
+      deleteFinancialYear: (yearId: string) => set(state => {
+        const { currentUserId, activeCompanyId, activeYearId } = state;
+        if (!currentUserId || !activeCompanyId) return;
+        const user = state.users.find(u => u.id === currentUserId);
+        const company = user?.companies.find(c => c.id === activeCompanyId);
+        if (!company) return;
+        company.financialYears = company.financialYears.filter(y => y.id !== yearId);
+        if (activeYearId === yearId) state.activeYearId = null;
+      }),
+
+      deleteCompany: (companyId: string) => set(state => {
+        const { currentUserId, activeCompanyId } = state;
+        if (!currentUserId) return;
+        const user = state.users.find(u => u.id === currentUserId);
+        if (!user) return;
+        user.companies = user.companies.filter(c => c.id !== companyId);
+        if (activeCompanyId === companyId) {
+          state.activeCompanyId = null;
+          state.activeYearId = null;
         }
       }),
 
