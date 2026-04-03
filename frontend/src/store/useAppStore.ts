@@ -58,12 +58,14 @@ export interface AppState {
   updateActiveYearNotesData: (updater: (draft: N4_13_State) => void) => void;
 }
 
-export const getDefaultAuditData = (): AuditReportData => ({
-  company: 'New Company',
-  addr: 'Address',
-  date: new Date().toLocaleDateString(),
-  reportingDate: '2025-06-30',
-  startDate: '2024-07-01',
+export const getDefaultAuditData = (): AuditReportData => {
+  const currentYear = new Date().getFullYear();
+  return {
+    company: 'New Company',
+    addr: 'Address',
+    date: new Date().toLocaleDateString(),
+    reportingDate: `${currentYear}-06-30`,
+    startDate: `${currentYear - 1}-07-01`,
   ppe: {
     assets: [
       { id: '1', particular: "Buildings", statementHead: "Buildings", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
@@ -74,9 +76,9 @@ export const getDefaultAuditData = (): AuditReportData => ({
     headerInfo: {
       reportTitle: "Property, plant and equipment",
       annexure: "Annexure A",
-      asAtDate: "30 June 2025",
-      yearStart: "01 Jul 24",
-      yearEnd: "30 June 25"
+      asAtDate: `30 June ${currentYear}`,
+      yearStart: `01 Jul ${String(currentYear - 1).slice(2)}`,
+      yearEnd: `30 June ${String(currentYear).slice(2)}`
     },
     prevYearData: {
       costOpening: '', costAddition: '', costDisposal: '',
@@ -88,13 +90,15 @@ export const getDefaultAuditData = (): AuditReportData => ({
       adminExpenseLabel: 'Administrative expense'
     }
   },
-  discussionData: {
-    docStatuses: {},
-    values: {}
-  }
-});
+    discussionData: {
+      docStatuses: {},
+      values: {}
+    }
+  };
+};
 
 export const getDefaultNotesData = (): N4_13_State => {
+  const currentYear = new Date().getFullYear();
   // Mock N4_13 actions as empty, they shouldn't be used directly from state here,
   // We use `updateActiveYearNotesData` instead. 
   // We cast as any because functions cannot be easily serialized in localStorage anyway,
@@ -105,8 +109,8 @@ export const getDefaultNotesData = (): N4_13_State => {
     company: {
       companyName: 'New Company Ltd.',
       address: 'Dhaka, Bangladesh',
-      reportingDateLabel: '30 June 2025',
-      priorDateLabel: '30 June 2024',
+      reportingDateLabel: `30 June ${currentYear}`,
+      priorDateLabel: `30 June ${currentYear - 1}`,
       currency: 'BDT',
     },
     ppe: {
@@ -218,8 +222,8 @@ export const useAppStore = create<AppState>()(
         // Deep copy from the most recent year if exists, else defaults
         if (company.financialYears.length > 0) {
           const lastYear = company.financialYears[company.financialYears.length - 1];
-          // Use structured clone as requested
-          newData = structuredClone(lastYear.data);
+          // Use robust JSON stringify trick to forcefully deep clone and silently drop any non-serializable proxies/functions
+          newData = JSON.parse(JSON.stringify(lastYear.data));
           
           // Modify some parameters for the copied data
           newData.auditData.reportingDate = reportingDate;

@@ -12,7 +12,8 @@ export const CompanyDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
-  const [newDate, setNewDate] = useState('');
+  const currentYear = new Date().getFullYear();
+  const [newDate, setNewDate] = useState(`${currentYear}-06-30`);
   const [error, setError] = useState('');
 
   const currentUser = users.find(u => u.id === currentUserId);
@@ -58,7 +59,10 @@ export const CompanyDashboard: React.FC = () => {
             <h1 className="text-4xl font-bold tracking-tight">{activeCompany.name}</h1>
           </div>
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setNewDate(`${new Date().getFullYear()}-06-30`);
+              setShowModal(true);
+            }}
             className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg shadow-lg shadow-emerald-500/20 transition-all"
           >
             + Start New Year
