@@ -66,30 +66,30 @@ export const getDefaultAuditData = (): AuditReportData => {
     date: new Date().toLocaleDateString(),
     reportingDate: `${currentYear}-06-30`,
     startDate: `${currentYear - 1}-07-01`,
-  ppe: {
-    assets: [
-      { id: '1', particular: "Buildings", statementHead: "Buildings", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-      { id: '2', particular: "Machinery", statementHead: "Plant & machineries", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-      { id: '3', particular: "Furniture and fixtures", statementHead: "Furniture & Fixture", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-      { id: '4', particular: "Office equipment", statementHead: "Office equipment", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' }
-    ],
-    headerInfo: {
-      reportTitle: "Property, plant and equipment",
-      annexure: "Annexure A",
-      asAtDate: `30 June ${currentYear}`,
-      yearStart: `01 Jul ${String(currentYear - 1).slice(2)}`,
-      yearEnd: `30 June ${String(currentYear).slice(2)}`
+    ppe: {
+      assets: [
+        { id: '1', particular: "Buildings", statementHead: "Buildings", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '2', particular: "Machinery", statementHead: "Plant & machineries", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '3', particular: "Furniture and fixtures", statementHead: "Furniture & Fixture", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '4', particular: "Office equipment", statementHead: "Office equipment", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' }
+      ],
+      headerInfo: {
+        reportTitle: "Property, plant and equipment",
+        annexure: "Annexure A",
+        asAtDate: `30 June ${currentYear}`,
+        yearStart: `01 Jul ${String(currentYear - 1).slice(2)}`,
+        yearEnd: `30 June ${String(currentYear).slice(2)}`
+      },
+      prevYearData: {
+        costOpening: '', costAddition: '', costDisposal: '',
+        depOpening: '', depCharged: '', depAdjustment: ''
+      },
+      breakdown: {
+        adminExpense: '0',
+        costOfSalesLabel: 'Cost of sales',
+        adminExpenseLabel: 'Administrative expense'
+      }
     },
-    prevYearData: {
-      costOpening: '', costAddition: '', costDisposal: '',
-      depOpening: '', depCharged: '', depAdjustment: ''
-    },
-    breakdown: {
-      adminExpense: '0',
-      costOfSalesLabel: 'Cost of sales',
-      adminExpenseLabel: 'Administrative expense'
-    }
-  },
     discussionData: {
       docStatuses: {},
       values: {}
@@ -170,7 +170,7 @@ export const useAppStore = create<AppState>()(
         if (!currentUserId) return;
         const user = state.users.find(u => u.id === currentUserId);
         if (!user) return;
-        
+
         const newCompany: Company = {
           id: uuidv4(),
           name,
@@ -186,7 +186,7 @@ export const useAppStore = create<AppState>()(
         if (!currentUserId) return;
         const user = state.users.find(u => u.id === currentUserId);
         if (!user) return;
-        
+
         const company = user.companies.find(c => c.id === id);
         if (company) {
           company.name = newName;
@@ -218,23 +218,92 @@ export const useAppStore = create<AppState>()(
         let newData: FullYearData;
 
         company.financialYears.sort((a, b) => a.year - b.year);
-        
+
         // Deep copy from the most recent year if exists, else defaults
         if (company.financialYears.length > 0) {
           const lastYear = company.financialYears[company.financialYears.length - 1];
           // Use robust JSON stringify trick to forcefully deep clone and silently drop any non-serializable proxies/functions
           newData = JSON.parse(JSON.stringify(lastYear.data));
           
-          // Modify some parameters for the copied data
+          // 1. Update dates for continuity
           newData.auditData.reportingDate = reportingDate;
-          newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString();
+          newData.auditData.startDate = lastYear.reportingDate;
+          newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+          newData.notesData.company.priorDateLabel = lastYear.data.notesData.company.reportingDateLabel;
+
+          // 2. Map all Notes Data (value_cy -> value_py)
+          newData.notesData.sections.forEach(section => {
+            section.rows.forEach(row => {
+              // Move CY value to PY
+              row.value_py = row.value_cy;
+              // Reset CY value (unless it's an opening balance we handle below)
+              if (!row.locked && !row.isTotal) {
+                row.value_cy = 0;
+              }
+            });
+          });
+
+          // 3. Explicit Balance Carry-Forward (Opening Balances)
+          const findRow = (sId: string, rId: string) => 
+            newData.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
+          
+          const prevRow = (sId: string, rId: string) =>
+            lastYear.data.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
+
+          const carryMap = [
+            { s: 'note14',   from: 're_closing',    to: 're_opening' },   // Retained Earnings
+            { s: 'note20',   from: 'cos_close_fg',  to: 'cos_open_fg' },  // Finished Goods
+            { s: 'note20_02',from: 'rm_close',      to: 'rm_open' },      // Raw Materials
+            { s: 'note20_02',from: 'pm_close',      to: 'pm_open' },      // Packing Materials
+            { s: 'note20_03',from: 'wip_close',     to: 'wip_open' },     // Work-in-Progress
+            { s: 'note20_04',from: 'ps_close',      to: 'ps_open' },      // Production Supplies
+            { s: 'note08_01',from: 'vat_total',     to: 'vat_opening' },  // Advance for VAT
+            { s: 'note10',   from: 'ait_total',     to: 'ait_opening' },  // AIT opening
+            { s: 'note17_dtl',from: 'dtl_total',    to: 'dtl_opening' },  // DTL opening
+            { s: 'note21_ctp',from: 'ctp_total',    to: 'ctp_opening' },  // CTP opening
+          ];
+
+          carryMap.forEach(m => {
+            const rowToUpdate = findRow(m.s, m.to);
+            const sourceRow = prevRow(m.s, m.from);
+            if (rowToUpdate && sourceRow) {
+              rowToUpdate.value_cy = sourceRow.value_cy;
+            }
+          });
+
+          // 4. PPE Asset Carry-Forward
+          if (newData.auditData.ppe?.assets) {
+            newData.auditData.ppe.assets.forEach((asset, idx) => {
+              const lastAsset = lastYear.data.auditData.ppe.assets[idx];
+              if (lastAsset) {
+                // Calculate Cost and Dep closing from previous year
+                const co = parseFloat(lastAsset.costOpening) || 0;
+                const ca = parseFloat(lastAsset.costAddition) || 0;
+                const cd = parseFloat(lastAsset.costDisposal) || 0;
+                const costClosing = co + ca - cd;
+
+                const do_ = parseFloat(lastAsset.depOpening) || 0;
+                const dc = parseFloat(lastAsset.depCharged) || 0;
+                const da = parseFloat(lastAsset.depAdjustment) || 0;
+                const depClosing = do_ + dc + da;
+
+                // Set as current year's opening
+                asset.costOpening = costClosing ? costClosing.toString() : '';
+                asset.costAddition = '';
+                asset.costDisposal = '';
+                asset.depOpening = depClosing ? depClosing.toString() : '';
+                asset.depCharged = '';
+                asset.depAdjustment = '';
+              }
+            });
+          }
         } else {
           newData = {
             auditData: getDefaultAuditData(),
             notesData: getDefaultNotesData()
           };
           newData.auditData.reportingDate = reportingDate;
-          newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString();
+          newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
         }
 
         const newFinYear: FinancialYear = {
@@ -247,7 +316,7 @@ export const useAppStore = create<AppState>()(
 
         company.financialYears.push(newFinYear);
         company.financialYears.sort((a, b) => a.year - b.year);
-        
+
         state.activeYearId = newYearId;
       }),
 
@@ -263,7 +332,7 @@ export const useAppStore = create<AppState>()(
         const user = state.users.find(u => u.id === currentUserId);
         const company = user?.companies.find(c => c.id === activeCompanyId);
         const year = company?.financialYears.find(y => y.id === targetId);
-        
+
         if (year) {
           year.status = "completed";
         }
