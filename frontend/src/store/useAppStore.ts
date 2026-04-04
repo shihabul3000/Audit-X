@@ -245,18 +245,12 @@ export const useAppStore = create<AppState>()(
           newData.auditData.company = prevData.auditData.company;
           newData.auditData.addr = prevData.auditData.addr;
 
-          // 3. For every section: move prev CY -> new PY, new CY stays 0
+          // 3. For every section: clone prev so dynamic rows are kept, move prev CY -> new PY, new CY stays 0
+          newData.notesData.sections = JSON.parse(JSON.stringify(prevData.notesData.sections));
           newData.notesData.sections.forEach(newSection => {
-            const prevSection = prevData.notesData.sections.find(s => s.id === newSection.id);
-            if (!prevSection) return;
             newSection.rows.forEach(newRow => {
-              const prevRow = prevSection.rows.find(r => r.id === newRow.id);
-              if (prevRow) {
-                // Prior year column = what was the current year in the previous FY
-                newRow.value_py = prevRow.value_cy;
-                // Current year column starts blank (0)
-                newRow.value_cy = 0;
-              }
+              newRow.value_py = newRow.value_cy;
+              newRow.value_cy = 0;
             });
           });
 
@@ -320,6 +314,44 @@ export const useAppStore = create<AppState>()(
             yearEnd: `30 June ${String(repYear).slice(2)}`,
           };
 
+          // Calculate totals from the previous year's assets to serve as the new Comparative (Previous) Year Row
+          const prevPPETotals = prevData.auditData.ppe.assets.reduce((t, asset) => {
+            const co = parseFloat(String(asset.costOpening).replace(/,/g, '')) || 0;
+            const ca = parseFloat(String(asset.costAddition).replace(/,/g, '')) || 0;
+            const cd = parseFloat(String(asset.costDisposal).replace(/,/g, '')) || 0;
+            const do_ = parseFloat(String(asset.depOpening).replace(/,/g, '')) || 0;
+            const dc = parseFloat(String(asset.depCharged).replace(/,/g, '')) || 0;
+            const da = parseFloat(String(asset.depAdjustment).replace(/,/g, '')) || 0;
+            return {
+              costOpening: t.costOpening + co,
+              costAddition: t.costAddition + ca,
+              costDisposal: t.costDisposal + cd,
+              depOpening: t.depOpening + do_,
+              depCharged: t.depCharged + dc,
+              depAdjustment: t.depAdjustment + da
+            };
+          }, { costOpening: 0, costAddition: 0, costDisposal: 0, depOpening: 0, depCharged: 0, depAdjustment: 0 });
+
+          newData.auditData.ppe.prevYearData = {
+            costOpening: prevPPETotals.costOpening ? prevPPETotals.costOpening.toString() : '',
+            costAddition: prevPPETotals.costAddition ? prevPPETotals.costAddition.toString() : '',
+            costDisposal: prevPPETotals.costDisposal ? prevPPETotals.costDisposal.toString() : '',
+            depOpening: prevPPETotals.depOpening ? prevPPETotals.depOpening.toString() : '',
+            depCharged: prevPPETotals.depCharged ? prevPPETotals.depCharged.toString() : '',
+            depAdjustment: prevPPETotals.depAdjustment ? prevPPETotals.depAdjustment.toString() : ''
+          };
+
+          // Carry forward NotesData PPE
+          newData.notesData.ppe = {
+            costClosing_cy: 0,
+            costOpening_py: prevData.notesData.ppe.costClosing_cy,
+            depClosing_cy: 0,
+            depOpening_py: prevData.notesData.ppe.depClosing_cy,
+            totalDepCharged_cy: 0,
+            adminDep_cy: 0,
+            taxBase_cy: 0,
+          };
+
           // 6. Table Carry-Forward: Bank Accounts (CY → PY, reset CY)
           newData.notesData.bankAccounts = prevData.notesData.bankAccounts.map(acc => ({
             ...acc,
@@ -349,6 +381,9 @@ export const useAppStore = create<AppState>()(
           // 10. Carry forward configs
           newData.notesData.shareConfig = { ...prevData.notesData.shareConfig };
           newData.notesData.taxConfig = { ...prevData.notesData.taxConfig };
+
+          // 11. Recalculate all formulas with the new carried-forward data
+          recalculate(newData.notesData);
 
         } else {
 
