@@ -255,43 +255,22 @@ export const useAppStore = create<AppState>()(
           });
 
           // 4. Explicit Opening Balance Carry-Forward (Closing of prev year → Opening of new year)
-          const findRow = (sId: string, rId: string) =>
-            newData.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
-          const prevRow = (sId: string, rId: string) =>
-            prevData.notesData.sections.find(s => s.id === sId)?.rows.find(r => r.id === rId);
-
-          const carryMap = [
-            { s: 'note14', from: 're_closing', to: 're_opening' },       // Retained Earnings
-            { s: 'note20', from: 'cos_close_fg', to: 'cos_open_fg' },    // Finished Goods
-            { s: 'note20_02', from: 'rm_close', to: 'rm_open' },         // Raw Materials
-            { s: 'note20_02', from: 'pm_close', to: 'pm_open' },         // Packing Materials
-            { s: 'note20_03', from: 'wip_close', to: 'wip_open' },       // Work-in-Progress
-            { s: 'note20_04', from: 'ps_close', to: 'ps_open' },         // Production Supplies
-            { s: 'note08_01', from: 'vat_total', to: 'vat_opening' },    // Advance for VAT
-            { s: 'note10', from: 'ait_total', to: 'ait_opening' },       // AIT opening
-            { s: 'note17_dtl', from: 'dtl_total', to: 'dtl_opening' },   // DTL opening
-            { s: 'note21_ctp', from: 'ctp_total', to: 'ctp_opening' },   // CTP opening
-          ];
-
-          carryMap.forEach(m => {
-            const rowToUpdate = findRow(m.s, m.to);
-            const sourceRow = prevRow(m.s, m.from);
-            if (rowToUpdate && sourceRow) {
-              rowToUpdate.value_cy = sourceRow.value_cy;
-            }
-          });
+          // Intentionally skipped: Users prefer a globally fresh zeroed Current Year. 
+          // Opening balances will be manually inputted or driven by the UI trial balance instead to prevent cascading auto-fills confusing the SFP/PNL.
 
           // 5. PPE Asset Carry-Forward (Closing Cost/Dep → new Opening)
           // Preserve asset list structure from previous year
+          const parsePpeValue = (v: string) => parseFloat(String(v || '').replace(/,/g, '')) || 0;
+          
           newData.auditData.ppe.assets = prevData.auditData.ppe.assets.map(lastAsset => {
-            const co = parseFloat(lastAsset.costOpening) || 0;
-            const ca = parseFloat(lastAsset.costAddition) || 0;
-            const cd = parseFloat(lastAsset.costDisposal) || 0;
+            const co = parsePpeValue(lastAsset.costOpening);
+            const ca = parsePpeValue(lastAsset.costAddition);
+            const cd = parsePpeValue(lastAsset.costDisposal);
             const costClosing = co + ca - cd;
 
-            const do_ = parseFloat(lastAsset.depOpening) || 0;
-            const dc = parseFloat(lastAsset.depCharged) || 0;
-            const da = parseFloat(lastAsset.depAdjustment) || 0;
+            const do_ = parsePpeValue(lastAsset.depOpening);
+            const dc = parsePpeValue(lastAsset.depCharged);
+            const da = parsePpeValue(lastAsset.depAdjustment);
             const depClosing = do_ + dc + da;
 
             return {

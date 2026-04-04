@@ -5,6 +5,7 @@ import { AuditReportData } from '../../types';
 import { getFormattedDate } from '../../utils/dateFormatter';
 import { useStore } from './N4_13/store';
 import { formatBDT } from './N4_13/utils';
+import { useAppStore } from '../../store/useAppStore';
 
 interface SCFProps {
   data: AuditReportData;
@@ -12,120 +13,103 @@ interface SCFProps {
 
 export const SCF: React.FC<SCFProps> = ({ data }) => {
   const store = useStore();
+  const appState = useAppStore();
 
-  // ── Helper ────────────────────────────────────────────────────────
-  const g = (sId: string, rId: string, field = 'value_cy'): number => {
-    const sec = store.sections.find(s => s.id === sId);
-    const row = sec?.rows.find(r => r.id === rId);
-    return (row as any)?.[field] ?? 0;
+  const getPrevYearNotes = () => {
+    const user = appState.users.find(u => u.id === appState.currentUserId);
+    const company = user?.companies.find(c => c.id === appState.activeCompanyId);
+    if (!company) return null;
+    const sortedYears = [...company.financialYears].sort((a, b) => a.year - b.year);
+    const currentIndex = sortedYears.findIndex(y => y.id === appState.activeYearId);
+    if (currentIndex > 0) {
+      return sortedYears[currentIndex - 1].data.notesData;
+    }
+    return null;
   };
 
-  // ══ A) OPERATING ACTIVITIES ═══════════════════════════════════════
+  const prevYearNotes = getPrevYearNotes();
 
-  // Non-cash add-backs
-  const pbt         = g('note25_01', 'pbt');                           // PBT from Note 29.01
-  const finance_add = g('note23', 'fc_total');                         // Finance costs (positive)
-  const dep_ppe     = store.ppe.totalDepCharged_cy;                    // Total depreciation
-  const amort       = -g('note05', 'intang_amort');                    // Intangible amort (stored -ve)
-  const ppeGainLoss = 0;                                               // Gain on disposal
+  // ── Calculation Engine ────────────────────────────────────────────
+  const calculateCF = (notes: any) => {
+    if (!notes) {
+      return {
+        pbt: 0, finance_add: 0, ppeGainLoss: 0, dep_ppe: 0, amort: 0, priorToWC: 0,
+        delta_inv: 0, delta_rec: 0, delta_adv: 0, delta_invFin: 0, delta_advCust: 0, delta_pay: 0, delta_prov: 0,
+        finCostPaid: 0, taxPaid: 0, netCF_operating: 0, ppeProceeds: 0, ppePurchase: 0, intangDisp: 0, netCF_investing: 0,
+        shareCashIn: 0, netBorrowings: 0, netUPAS: 0, netRelParty: 0, netCF_financing: 0, netChange: 0, cashBegin: 0, cashEnd: 0
+      };
+    }
 
-  const priorToWC   = pbt + finance_add + ppeGainLoss + dep_ppe + amort;
+    const g = (sId: string, rId: string, field = 'value_cy'): number => {
+      const sec = notes.sections?.find((s: any) => s.id === sId);
+      const row = sec?.rows?.find((r: any) => r.id === rId);
+      return (row as any)?.[field] ?? 0;
+    };
 
-  // Working capital changes (PY - CY for assets: increase = outflow)
-  const inv_cy   = g('note06', 'inv_total');
-  const inv_py   = g('note06', 'inv_total', 'value_py');
-  const delta_inv = inv_py - inv_cy;                                   // negative if inv ↑
+    // ── A) OPERATING ──
+    const pbt = g('note25_01', 'pbt');
+    const finance_add = g('note23', 'fc_total');
+    const dep_ppe = notes.ppe?.totalDepCharged_cy || 0;
+    const amort = -g('note05', 'intang_amort');
+    const ppeGainLoss = 0;
+    const priorToWC = pbt + finance_add + ppeGainLoss + dep_ppe + amort;
 
-  const rec_cy   = g('note07', 'rec_total');
-  const rec_py   = g('note07', 'rec_total', 'value_py');
-  const delta_rec = rec_py - rec_cy;
+    // WC Changes (PY - CY)
+    const delta_inv = g('note06', 'inv_total', 'value_py') - g('note06', 'inv_total');
+    const delta_rec = g('note07', 'rec_total', 'value_py') - g('note07', 'rec_total');
+    const delta_adv = g('note08', 'adv_total', 'value_py') - g('note08', 'adv_total');
+    const delta_invFin = g('note09', 'inv_fin_total', 'value_py') - g('note09', 'inv_fin_total');
+    
+    // Liabilities (CY - PY)
+    const delta_advCust = g('note19_adv', 'adv_cust_total') - g('note19_adv', 'adv_cust_total', 'value_py');
+    const delta_pay = g('note20_pay', 'pay_total') - g('note20_pay', 'pay_total', 'value_py');
+    const delta_prov = g('note22', 'prov_total') - g('note22', 'prov_total', 'value_py');
 
-  const adv_cy   = g('note08', 'adv_total');
-  const adv_py   = g('note08', 'adv_total', 'value_py');
-  const delta_adv = adv_py - adv_cy;
+    const finCostPaid = -finance_add;
+    const taxPaid = -(g('note21_ctp', 'ctp_opening') + g('note25', 'current_tax') - g('note21_ctp', 'ctp_total')) 
+                    - (g('note10', 'ait_total') - g('note10', 'ait_opening'));
 
-  const invFin_cy = g('note09', 'inv_fin_total');
-  const invFin_py = g('note09', 'inv_fin_total', 'value_py');
-  const delta_invFin = invFin_py - invFin_cy;
+    const netCF_operating = priorToWC + delta_inv + delta_rec + delta_adv + delta_invFin 
+                          + delta_advCust + delta_pay + delta_prov + finCostPaid + taxPaid;
 
-  // Liabilities: CY - PY (increase = inflow)
-  const advCust_cy = g('note19_adv', 'adv_cust_total');
-  const advCust_py = g('note19_adv', 'adv_cust_total', 'value_py');
-  const delta_advCust = advCust_cy - advCust_py;
+    // ── B) INVESTING ──
+    const reval_gross = g('note13', 'reval_surplus');
+    const ppeCostChange = (notes.ppe?.costClosing_cy || 0) - (notes.ppe?.costOpening_py || 0);
+    const ppePurchase = -(ppeCostChange - reval_gross);
+    const ppeProceeds = 0;
+    const intangDisp = 0;
+    const netCF_investing = ppeProceeds + ppePurchase + intangDisp;
 
-  const pay_cy   = g('note20_pay', 'pay_total');
-  const pay_py   = g('note20_pay', 'pay_total', 'value_py');
-  const delta_pay = pay_cy - pay_py;
+    // ── C) FINANCING ──
+    const shareCashIn = 0;
+    
+    const loanClosing = notes.loans?.reduce((s: any, l: any) => s + l.nonCurrent_cy + l.current_cy, 0) || 0;
+    const loanOpening = notes.loans?.reduce((s: any, l: any) => s + l.total_py, 0) || 0;
+    const netBorrowings = loanClosing - loanOpening;
 
-  const prov_cy  = g('note22', 'prov_total');
-  const prov_py  = g('note22', 'prov_total', 'value_py');
-  const delta_prov = prov_cy - prov_py;
+    const upasClosing = notes.upasEntries?.reduce((s: any, l: any) => s + l.nonCurrent_cy + l.current_cy, 0) || 0;
+    const upasOpening = notes.upasEntries?.reduce((s: any, l: any) => s + l.total_py, 0) || 0;
+    const netUPAS = upasClosing - upasOpening;
 
-  // Finance costs paid (cash outflow)
-  const finCostPaid = -finance_add;
+    const netRelParty = g('note18', 'rel_liab_total') - g('note18', 'rel_liab_total', 'value_py');
+    const netCF_financing = shareCashIn + netBorrowings + netUPAS + netRelParty;
 
-  // Income tax paid:
-  // = opening CTP + current tax expense - closing CTP + AIT movement
-  const ctp_opening  = g('note21_ctp', 'ctp_opening');
-  const tax_expense  = g('note25', 'current_tax');
-  const ctp_closing  = g('note21_ctp', 'ctp_total');
-  const ait_closing  = g('note10', 'ait_total');
-  const ait_opening  = g('note10', 'ait_opening');
-  const taxPaid = -(ctp_opening + tax_expense - ctp_closing) - (ait_closing - ait_opening);
+    // ── SUMMARY ──
+    const netChange = netCF_operating + netCF_investing + netCF_financing;
+    const cashBegin = g('note11', 'cash_total', 'value_py');
+    const cashEnd = g('note11', 'cash_total');
 
-  const netCF_operating = priorToWC
-    + delta_inv + delta_rec + delta_adv + delta_invFin
-    + delta_advCust + delta_pay + delta_prov
-    + finCostPaid + taxPaid;
+    return {
+      pbt, finance_add, ppeGainLoss, dep_ppe, amort, priorToWC,
+      delta_inv, delta_rec, delta_adv, delta_invFin, delta_advCust, delta_pay, delta_prov,
+      finCostPaid, taxPaid, netCF_operating, ppeProceeds, ppePurchase, intangDisp, netCF_investing,
+      shareCashIn, netBorrowings, netUPAS, netRelParty, netCF_financing, netChange, cashBegin, cashEnd
+    };
+  };
 
-  // ══ B) INVESTING ACTIVITIES ════════════════════════════════════════
-
-  // PPE acquisition = cost increase (excluding revaluation)
-  // Revaluation adds to cost but is not cash → subtract reval from cost change
-  const reval_gross   = g('note13', 'reval_surplus');                  // gross reval before tax
-  const ppeCostChange = store.ppe.costClosing_cy - store.ppe.costOpening_py;
-  const ppePurchase   = -(ppeCostChange - reval_gross);                // cash paid for PPE
-
-  const ppeProceeds   = 0;                                             // from Note 25.01 if any
-  const intangDisp    = 0;
-
-  const netCF_investing = ppeProceeds + ppePurchase + intangDisp;
-
-  // ══ C) FINANCING ACTIVITIES ════════════════════════════════════════
-
-  const shareCashIn   = 0;                                             // no new shares for cash
-
-  const loanClosing   = store.loans.reduce((s, l) => s + l.nonCurrent_cy + l.current_cy, 0);
-  const loanOpening   = store.loans.reduce((s, l) => s + l.total_py, 0);
-  const netBorrowings = loanClosing - loanOpening;
-
-  const upasClosing   = store.upasEntries.reduce((s, l) => s + l.nonCurrent_cy + l.current_cy, 0);
-  const upasOpening   = store.upasEntries.reduce((s, l) => s + l.total_py, 0);
-  const netUPAS       = upasClosing - upasOpening;
-
-  const relLiab_cy    = g('note18', 'rel_liab_total');
-  const relLiab_py    = g('note18', 'rel_liab_total', 'value_py');
-  const netRelParty   = relLiab_cy - relLiab_py;
-
-  const netCF_financing = shareCashIn + netBorrowings + netUPAS + netRelParty;
-
-  // ══ SUMMARY ════════════════════════════════════════════════════════
-
-  const netChange    = netCF_operating + netCF_investing + netCF_financing;
-  const cashBegin    = g('note11', 'cash_total', 'value_py');          // PY cash total
-  const fxEffect     = 0;
-  const cashEnd      = g('note11', 'cash_total');                      // CY cash total
-
-  // PY equivalents (use value_py field)
-  const pbt_py      = g('note25_01', 'pbt', 'value_py');
-  const fin_py      = g('note23', 'fc_total', 'value_py');
-  const dep_py      = store.ppe.depOpening_py > 0 ? 0 : 0;            // PY dep from store if available
-  const netCF_op_py = 0;                                               // simplified: 0 for PY
-  const netCF_inv_py = -(store.ppe.costOpening_py - 0);               // simplified
-  const netCF_fin_py = 0;
-  const netChange_py = 0;
-  const cashBegin_py = 0;
-  const cashEnd_py   = cashBegin;                                      // PY end = CY begin
+  const cyCF = calculateCF(store);
+  const pyCF = calculateCF(prevYearNotes);
+  const fxEffect = 0;
 
   // ── Row renderer ──────────────────────────────────────────────────
   const Row = ({
@@ -139,6 +123,7 @@ export const SCF: React.FC<SCFProps> = ({ data }) => {
       <td className={`text-right ${underline ? 'border-b border-black' : ''}`}>
         {formatBDT(cy)}
       </td>
+      <td />
       <td className={`text-right ${underline ? 'border-b border-black' : ''}`}>
         {formatBDT(py)}
       </td>
@@ -172,73 +157,79 @@ export const SCF: React.FC<SCFProps> = ({ data }) => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[11px]">
+          <table className="w-full border-collapse text-[11px] table-fixed">
+            <colgroup>
+              <col />
+              <col className="w-24" />
+              <col className="w-4" />
+              <col className="w-24" />
+            </colgroup>
             <tbody>
               {/* A) OPERATING */}
               <tr className="font-bold">
                 <td className="py-1">A) Cash flow from operating activities</td>
-                <td /><td />
+                <td /><td /><td />
               </tr>
-              <Row label="Profit before tax"           cy={pbt}          py={pbt_py} />
-              <Row label="Finance costs"               cy={finance_add}  py={fin_py} />
+              <Row label="Profit before tax"           cy={cyCF.pbt}          py={pyCF.pbt} />
+              <Row label="Finance costs"               cy={cyCF.finance_add}  py={pyCF.finance_add} />
               <Row label="(Gain) loss on disposal of property, plant and equipment"
-                         cy={ppeGainLoss} py={0} />
+                         cy={cyCF.ppeGainLoss} py={pyCF.ppeGainLoss} />
               <Row label="Depreciation of property, plant and equipment"
-                         cy={dep_ppe}     py={0} />
+                         cy={cyCF.dep_ppe}     py={pyCF.dep_ppe} />
               <Row label="Amortization of intangible assets"
-                         cy={amort}       py={0}      underline />
+                         cy={cyCF.amort}       py={pyCF.amort}      underline />
               <Row label="Operating cash flows before movements in working capital"
-                         cy={priorToWC}   py={0}      bold italic underline />
+                         cy={cyCF.priorToWC}   py={pyCF.priorToWC}      bold italic underline />
 
-              <Row label="(Increased)/decreased in Inventories"           cy={delta_inv}     py={0} />
+              <Row label="(Increased)/decreased in Inventories"           cy={cyCF.delta_inv}     py={pyCF.delta_inv} />
               <Row label="(Increased)/decreased in Trade and other receivables"
-                         cy={delta_rec}   py={0} />
+                         cy={cyCF.delta_rec}   py={pyCF.delta_rec} />
               <Row label="(Increased)/decreased in Advances, deposits and prepayments"
-                         cy={delta_adv}   py={0} />
+                         cy={cyCF.delta_adv}   py={pyCF.delta_adv} />
               <Row label="(Increased)/decreased in Investments in financial assets"
-                         cy={delta_invFin} py={0} />
+                         cy={cyCF.delta_invFin} py={pyCF.delta_invFin} />
               <Row label="(decreased)/increased in Advance received from customers"
-                         cy={delta_advCust} py={0} />
+                         cy={cyCF.delta_advCust} py={pyCF.delta_advCust} />
               <Row label="(decreased)/increased in Trade and other payables"
-                         cy={delta_pay}   py={0} />
+                         cy={cyCF.delta_pay}   py={pyCF.delta_pay} />
               <Row label="Increased/(decreased) in Provision for expense"
-                         cy={delta_prov}  py={0} />
-              <Row label="Finance costs paid"   cy={finCostPaid} py={0} />
-              <Row label="Income tax paid"      cy={taxPaid}     py={0}  underline />
+                         cy={cyCF.delta_prov}  py={pyCF.delta_prov} />
+              <Row label="Finance costs paid"   cy={cyCF.finCostPaid} py={pyCF.finCostPaid} />
+              <Row label="Income tax paid"      cy={cyCF.taxPaid}     py={pyCF.taxPaid}  underline />
               <Row label="Net cash (used in)/generated from operating activities"
-                         cy={netCF_operating} py={netCF_op_py}
+                         cy={cyCF.netCF_operating} py={pyCF.netCF_operating}
                          bold italic underline />
 
               {/* B) INVESTING */}
-              <tr><td colSpan={3} className="h-4" /></tr>
+              <tr><td colSpan={4} className="h-4" /></tr>
               <tr className="font-bold">
                 <td className="py-1">B) Cash flow from investing activities</td>
-                <td /><td />
+                <td /><td /><td />
               </tr>
               <Row label="Proceeds from disposal of Property, plant and equipment"
-                         cy={ppeProceeds} py={0} />
+                         cy={cyCF.ppeProceeds} py={pyCF.ppeProceeds} />
               <Row label="Acquisition of Property, plant and equipment"
-                         cy={ppePurchase} py={0} />
+                         cy={cyCF.ppePurchase} py={pyCF.ppePurchase} />
               <Row label="Proceeds from disposal of Intangible assets"
-                         cy={intangDisp}  py={0}  underline />
+                         cy={cyCF.intangDisp}  py={pyCF.intangDisp}  underline />
               <Row label="Net cash (used in)/generated from investing activities"
-                         cy={netCF_investing} py={netCF_inv_py}
+                         cy={cyCF.netCF_investing} py={pyCF.netCF_investing}
                          bold italic underline />
 
               {/* C) FINANCING */}
-              <tr><td colSpan={3} className="h-4" /></tr>
+              <tr><td colSpan={4} className="h-4" /></tr>
               <tr className="font-bold">
                 <td className="py-1">C) Cash flows from financing activities</td>
-                <td /><td />
+                <td /><td /><td />
               </tr>
-              <Row label="Received from Share capital"   cy={shareCashIn}  py={0} />
+              <Row label="Received from Share capital"   cy={cyCF.shareCashIn}  py={pyCF.shareCashIn} />
               <Row label="Proceeds from Borrowings from bank"
-                         cy={netBorrowings} py={0} />
-              <Row label="Proceeds from UPAS liabilities" cy={netUPAS}     py={0} />
+                         cy={cyCF.netBorrowings} py={pyCF.netBorrowings} />
+              <Row label="Proceeds from UPAS liabilities" cy={cyCF.netUPAS}     py={pyCF.netUPAS} />
               <Row label="(Repayment) of Financial liabilities with related parties"
-                         cy={netRelParty}  py={0}  underline />
+                         cy={cyCF.netRelParty}  py={pyCF.netRelParty}  underline />
               <Row label="Net cash generated from/(used in) financing activities"
-                         cy={netCF_financing} py={netCF_fin_py}
+                         cy={cyCF.netCF_financing} py={pyCF.netCF_financing}
                          bold italic underline />
 
               {/* SUMMARY */}
@@ -246,33 +237,37 @@ export const SCF: React.FC<SCFProps> = ({ data }) => {
                 <td className="py-1">
                   Net increase/(decrease) cash and cash equivalents (A+B+C)
                 </td>
-                <td className="text-right border-b border-black">{formatBDT(netChange)}</td>
-                <td className="text-right border-b border-black">{formatBDT(netChange_py)}</td>
+                <td className="text-right border-b border-black">{formatBDT(cyCF.netChange)}</td>
+                <td className="border-b border-black" />
+                <td className="text-right border-b border-black">{formatBDT(pyCF.netChange)}</td>
               </tr>
 
-              <tr><td colSpan={3} className="h-4" /></tr>
+              <tr><td colSpan={4} className="h-4" /></tr>
 
               <tr className="border-t border-black">
                 <td className="py-1">Cash and cash equivalents at beginning of year</td>
-                <td className="text-right">{formatBDT(cashBegin)}</td>
-                <td className="text-right">{formatBDT(cashBegin_py)}</td>
+                <td className="text-right border-t border-black">{formatBDT(cyCF.cashBegin)}</td>
+                <td className="border-t border-black" />
+                <td className="text-right border-t border-black">{formatBDT(pyCF.cashBegin)}</td>
               </tr>
               <tr>
                 <td className="py-1">Effect of foreign exchange rate changes</td>
                 <td className="text-right border-b border-black">{formatBDT(fxEffect)}</td>
+                <td className="border-b border-black" />
                 <td className="text-right border-b border-black">{formatBDT(0)}</td>
               </tr>
-              <tr className="font-bold border-y border-black">
+              <tr className="font-bold border-b border-black">
                 <td className="py-1">Cash and cash equivalents at end of year</td>
-                <td className="text-right border-b border-black">{formatBDT(cashEnd)}</td>
-                <td className="text-right border-b border-black">{formatBDT(cashEnd_py)}</td>
+                <td className="text-right border-b border-black">{formatBDT(cyCF.cashEnd)}</td>
+                <td className="border-b border-black" />
+                <td className="text-right border-b border-black">{formatBDT(pyCF.cashEnd)}</td>
               </tr>
 
               {/* Verification check (non-print) */}
-              {Math.abs(cashEnd - (cashBegin + netChange)) > 1 && (
+              {Math.abs(cyCF.cashEnd - (cyCF.cashBegin + cyCF.netChange)) > 1 && (
                 <tr className="print:hidden">
-                  <td colSpan={3} className="text-red-500 text-[10px] py-1">
-                    ⚠️ Cash flow does not reconcile — difference: {formatBDT(cashEnd - cashBegin - netChange)}
+                  <td colSpan={4} className="text-red-500 text-[10px] py-1">
+                    ⚠️ Cash flow does not reconcile — difference: {formatBDT(cyCF.cashEnd - cyCF.cashBegin - cyCF.netChange)}
                   </td>
                 </tr>
               )}
