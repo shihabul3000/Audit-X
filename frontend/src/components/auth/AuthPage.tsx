@@ -8,7 +8,7 @@ export const AuthPage: React.FC = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  
+
   const login = useAppStore(state => state.login);
   const register = useAppStore(state => state.register);
 
@@ -60,7 +60,7 @@ export const AuthPage: React.FC = () => {
               />
             </div>
           )}
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
             <input
@@ -83,8 +83,8 @@ export const AuthPage: React.FC = () => {
 
         <div className="mt-6 text-center text-sm text-gray-400">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button 
-            onClick={() => setIsLogin(!isLogin)} 
+          <button
+            onClick={() => setIsLogin(!isLogin)}
             className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
           >
             {isLogin ? 'Register here' : 'Log in here'}

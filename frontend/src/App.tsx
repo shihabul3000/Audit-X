@@ -34,7 +34,7 @@ function AppContent() {
   const navigate = useNavigate();
 
   const tabs: Tab[] = ['Cover', 'SFP', 'PNL', 'SCE', 'SCF', 'P_Discussion', 'N4-13', 'PPE'];
-  
+
   // Navigate back to dashboard if they reach /fs without selecting a year
   useEffect(() => {
     if (!activeYearId) {
@@ -97,7 +97,7 @@ function AppContent() {
 
       {/* Bottom Navigation Bar */}
       <div className="relative">
-         <Navigation tabs={tabs} activeTab={activeTab} setActiveTab={handleTabChange} />
+        <Navigation tabs={tabs} activeTab={activeTab} setActiveTab={handleTabChange} />
       </div>
     </div>
   );

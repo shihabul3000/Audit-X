@@ -107,8 +107,8 @@ export const Sidebar: React.FC = () => {
                   <button
                     onClick={() => setActiveCompany(company.id)}
                     className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none flex justify-between items-center ${activeCompanyId === company.id
-                        ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20'
-                        : 'text-gray-300 hover:bg-[#2a2a2a]'
+                      ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20'
+                      : 'text-gray-300 hover:bg-[#2a2a2a]'
                       }`}
                   >
                     <span className="truncate">{company.name}</span>

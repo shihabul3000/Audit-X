@@ -261,7 +261,7 @@ export const useAppStore = create<AppState>()(
           // 5. PPE Asset Carry-Forward (Closing Cost/Dep → new Opening)
           // Preserve asset list structure from previous year
           const parsePpeValue = (v: string) => parseFloat(String(v || '').replace(/,/g, '')) || 0;
-          
+
           newData.auditData.ppe.assets = prevData.auditData.ppe.assets.map(lastAsset => {
             const co = parsePpeValue(lastAsset.costOpening);
             const ca = parsePpeValue(lastAsset.costAddition);

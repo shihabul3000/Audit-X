@@ -101,8 +101,8 @@ export const CompanyDashboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 border-b border-gray-800/50">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${fy.status === 'completed'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                       }`}>
                       {fy.status === 'completed' ? 'Completed' : 'In Progress'}
                     </span>
