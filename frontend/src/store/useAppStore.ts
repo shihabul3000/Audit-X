@@ -8,17 +8,50 @@ import { Store as N4_13_State } from '../components/tabs/N4_13/types';
 import { buildInitialSections } from '../components/tabs/N4_13/sections';
 import { recalculate } from '../components/tabs/N4_13/recalculate';
 
+export type UserRole = 'student' | 'admin' | 'super_admin';
+
+export interface UserNotification {
+  id: string;
+  type: 'assignment' | 'review_submitted' | 'changes_requested' | 'finalized' | 'ban' | 'unban' | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  relatedCompanyId?: string;
+  relatedYearId?: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   profileImg?: string;
-  companies: Company[];
+  role: UserRole;
+  status: 'active' | 'banned' | 'deleted';
+  bannedReason?: string;
+  bannedByUserId?: string;
+  
+  assignedCompanyIds: string[];
+  assignedStudentIds?: string[];
+  assignedAdminIds?: string[];
+  notifications: UserNotification[];
+}
+
+export type ReviewStatus = 'draft' | 'submitted' | 'under_review' | 'changes_requested' | 'finalized';
+
+export interface ReviewEvent {
+  id: string;
+  type: 'created' | 'submitted' | 'under_review' | 'changes_requested' | 'finalized' | 'reopened';
+  actorUserId: string;
+  actorRole: UserRole | string;
+  note?: string;
+  createdAt: string;
 }
 
 export interface Company {
   id: string;
   name: string;
+  createdByUserId: string;
   financialYears: FinancialYear[];
 }
 
@@ -29,14 +62,29 @@ export interface FullYearData {
 
 export interface FinancialYear {
   id: string;
-  year: number; // e.g., 2024, 2025, 2026
-  reportingDate: string; // e.g., "2026-06-30"
-  status: "in-progress" | "completed";
+  year: number; 
+  reportingDate: string; 
+  status: 'in-progress' | 'completed';
+  reviewStatus: ReviewStatus;
+  isLocked: boolean;
+  
+  createdByUserId: string;
+  assignedStudentIds: string[];
+  assignedAdminIds: string[];
+  
+  currentReviewerUserId: string | null;
+  finalizedByUserId: string | null;
+  finalizedAt: string | null;
+  submittedAt: string | null;
+  lastEditedByUserId: string | null;
+  
+  reviewEvents: ReviewEvent[];
   data: FullYearData;
 }
 
 export interface AppState {
   users: User[];
+  companies: Company[];
   currentUserId: string | null;
   activeCompanyId: string | null;
   activeYearId: string | null;
@@ -58,6 +106,24 @@ export interface AppState {
   getActiveYearData: () => FullYearData;
   updateActiveYearAuditData: (updater: (draft: AuditReportData) => void) => void;
   updateActiveYearNotesData: (updater: (draft: N4_13_State) => void) => void;
+
+  // New RBAC & Review Actions
+  createUser: (name: string, email: string, role: UserRole) => void;
+  updateUserRole: (userId: string, role: UserRole) => void;
+  banUser: (userId: string, reason?: string) => void;
+  unbanUser: (userId: string) => void;
+  softDeleteUser: (userId: string) => void;
+  assignStudentToAdmin: (studentId: string, adminId: string) => void;
+  unassignStudentFromAdmin: (studentId: string, adminId: string) => void;
+  assignCompanyToUser: (userId: string, companyId: string) => void;
+  unassignCompanyFromUser: (userId: string, companyId: string) => void;
+  submitFinancialYear: (yearId: string, note?: string) => void;
+  startFinancialYearReview: (yearId: string) => void;
+  requestFinancialYearChanges: (yearId: string, note?: string) => void;
+  finalizeFinancialYear: (yearId: string, note?: string) => void;
+  reopenFinancialYear: (yearId: string, note?: string) => void;
+  markNotificationRead: (notificationId: string) => void;
+  pushNotification: (userId: string, notification: Omit<UserNotification, 'id' | 'createdAt' | 'read'>) => void;
 }
 
 export const getDefaultAuditData = (): AuditReportData => {
@@ -70,14 +136,14 @@ export const getDefaultAuditData = (): AuditReportData => {
     startDate: `${currentYear - 1}-07-01`,
     ppe: {
       assets: [
-        { id: '1', particular: "Buildings", statementHead: "Buildings", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-        { id: '2', particular: "Machinery", statementHead: "Plant & machineries", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-        { id: '3', particular: "Furniture and fixtures", statementHead: "Furniture & Fixture", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
-        { id: '4', particular: "Office equipment", statementHead: "Office equipment", costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' }
+        { id: '1', particular: 'Buildings', statementHead: 'Buildings', costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '2', particular: 'Machinery', statementHead: 'Plant & machineries', costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '3', particular: 'Furniture and fixtures', statementHead: 'Furniture & Fixture', costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' },
+        { id: '4', particular: 'Office equipment', statementHead: 'Office equipment', costOpening: '', costAddition: '', costDisposal: '', rate: '', depOpening: '', depCharged: '', depAdjustment: '' }
       ],
       headerInfo: {
-        reportTitle: "Property, plant and equipment",
-        annexure: "Annexure A",
+        reportTitle: 'Property, plant and equipment',
+        annexure: 'Annexure A',
         asAtDate: `30 June ${currentYear}`,
         yearStart: `01 Jul ${String(currentYear - 1).slice(2)}`,
         yearEnd: `30 June ${String(currentYear).slice(2)}`
@@ -101,12 +167,6 @@ export const getDefaultAuditData = (): AuditReportData => {
 
 export const getDefaultNotesData = (): N4_13_State => {
   const currentYear = new Date().getFullYear();
-  // Mock N4_13 actions as empty, they shouldn't be used directly from state here,
-  // We use `updateActiveYearNotesData` instead. 
-  // We cast as any because functions cannot be easily serialized in localStorage anyway,
-  // but Zustand will just drop them or preserve reference. 
-  // It's cleaner to remove the functions from N4_13_State in the long run,
-  // but for backward compatibility, we can leave them out of the persisted state if we want.
   return {
     company: {
       companyName: 'New Company Ltd.',
@@ -130,31 +190,91 @@ export const getDefaultNotesData = (): N4_13_State => {
   } as N4_13_State;
 };
 
+export const authSelectors = {
+  getCurrentUser: (state: AppState) => state.users.find(u => u.id === state.currentUserId) || null,
+  isBanned: (user: User | null) => user?.status === 'banned',
+  isSuperAdmin: (user: User | null) => user?.role === 'super_admin',
+  isAdmin: (user: User | null) => user?.role === 'admin',
+  isStudent: (user: User | null) => !user || user.role === 'student',
+};
+
+export const permissionSelectors = {
+  canAccessCompany: (user: User | null, company: Company | null) => {
+    if (!user || user.status === 'banned' || !company) return false;
+    if (user.role === 'super_admin') return true;
+    if (user.role === 'admin') return true; // Could scope to assigned admin
+    return user.assignedCompanyIds.includes(company.id) || company.createdByUserId === user.id;
+  },
+
+  canEditFinancialYear: (user: User | null, year: FinancialYear | null) => {
+    if (!user || user.status === 'banned' || !year) return false;
+    if (year.isLocked) return false;
+    
+    if (user.role === 'super_admin') return true;
+    if (user.role === 'admin') return true; // Admins can edit accessible ones
+
+    if (user.role === 'student') {
+      return year.assignedStudentIds.includes(user.id) || year.createdByUserId === user.id;
+    }
+    return false;
+  },
+
+  canFinalizeFinancialYear: (user: User | null, year: FinancialYear | null) => {
+     if (!user || user.status === 'banned' || !year) return false;
+     return user.role === 'super_admin' || user.role === 'admin';
+  }
+};
 
 export const useAppStore = create<AppState>()(
   persist(
     immer((set, get) => ({
       users: [],
+      companies: [],
       currentUserId: null,
       activeCompanyId: null,
       activeYearId: null,
 
       login: (email: string) => set(state => {
-        const user = state.users.find(u => u.email === email);
+        // --- DUMMY ACCOUNT AUTO-CREATION FOR TESTING ---
+        const dummyAccounts = [
+          { email: 'super@test.com', name: 'Super Admin', role: 'super_admin' as const },
+          { email: 'admin@test.com', name: 'Test Admin', role: 'admin' as const },
+          { email: 'student@test.com', name: 'Test Student', role: 'student' as const }
+        ];
+
+        dummyAccounts.forEach(dummy => {
+           if (email === dummy.email && !state.users.some(u => u.email === dummy.email)) {
+             state.users.push({
+               id: uuidv4(), name: dummy.name, email: dummy.email, role: dummy.role,
+               status: 'active', assignedCompanyIds: [], notifications: []
+             });
+           }
+        });
+        // -----------------------------------------------
+
+        const user = state.users.find(u => u.email === email && u.status !== 'deleted');
         if (user) {
           state.currentUserId = user.id;
           state.activeCompanyId = null;
           state.activeYearId = null;
         } else {
-          throw new Error('User not found');
+          throw new Error('User not found or deleted');
         }
       }),
 
       register: (name: string, email: string) => set(state => {
-        if (state.users.some(u => u.email === email)) {
+        if (state.users.some(u => u.email === email && u.status !== 'deleted')) {
           throw new Error('User already exists');
         }
-        const newUser: User = { id: uuidv4(), name, email, companies: [] };
+        const newUser: User = { 
+          id: uuidv4(), 
+          name, 
+          email, 
+          role: 'student',
+          status: 'active',
+          assignedCompanyIds: [],
+          notifications: []
+        };
         state.users.push(newUser);
         state.currentUserId = newUser.id;
         state.activeCompanyId = null;
@@ -170,26 +290,26 @@ export const useAppStore = create<AppState>()(
       createCompany: (name: string) => set(state => {
         const { currentUserId } = state;
         if (!currentUserId) return;
-        const user = state.users.find(u => u.id === currentUserId);
-        if (!user) return;
-
+        
         const newCompany: Company = {
           id: uuidv4(),
           name,
+          createdByUserId: currentUserId,
           financialYears: []
         };
-        user.companies.push(newCompany);
+        state.companies.push(newCompany);
+
+        const user = state.users.find(u => u.id === currentUserId);
+        if (user) {
+           user.assignedCompanyIds.push(newCompany.id);
+        }
+
         state.activeCompanyId = newCompany.id;
         state.activeYearId = null;
       }),
 
       updateCompany: (id: string, newName: string) => set(state => {
-        const { currentUserId } = state;
-        if (!currentUserId) return;
-        const user = state.users.find(u => u.id === currentUserId);
-        if (!user) return;
-
-        const company = user.companies.find(c => c.id === id);
+        const company = state.companies.find(c => c.id === id);
         if (company) {
           company.name = newName;
         }
@@ -202,14 +322,13 @@ export const useAppStore = create<AppState>()(
 
       startNewYear: (reportingDate: string) => set(state => {
         const { currentUserId, activeCompanyId } = state;
-        if (!currentUserId || !activeCompanyId) throw new Error("No active company");
+        if (!currentUserId || !activeCompanyId) throw new Error('No active company');
 
-        const user = state.users.find(u => u.id === currentUserId);
-        const company = user?.companies.find(c => c.id === activeCompanyId);
-        if (!company) throw new Error("Company not found");
+        const company = state.companies.find(c => c.id === activeCompanyId);
+        if (!company) throw new Error('Company not found');
 
         const newYearObj = new Date(reportingDate);
-        if (isNaN(newYearObj.getTime())) throw new Error("Invalid reporting date");
+        if (isNaN(newYearObj.getTime())) throw new Error('Invalid reporting date');
         const newYearNumber = newYearObj.getFullYear();
 
         if (company.financialYears.some(y => y.year === newYearNumber)) {
@@ -221,31 +340,25 @@ export const useAppStore = create<AppState>()(
 
         company.financialYears.sort((a, b) => a.year - b.year);
 
-        // Deep copy from the most recent year if exists, else defaults
         if (company.financialYears.length > 0) {
           const lastYear = company.financialYears[company.financialYears.length - 1];
-          // Snapshot the PREVIOUS year's data for carry-forward reference
           const prevData: FullYearData = JSON.parse(JSON.stringify(lastYear.data));
 
-          // Start with fresh defaults for the NEW year's data entry
           newData = {
             auditData: getDefaultAuditData(),
             notesData: getDefaultNotesData()
           };
 
-          // 1. Update dates for continuity
           newData.auditData.reportingDate = reportingDate;
           newData.auditData.startDate = lastYear.reportingDate;
           newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
           newData.notesData.company.priorDateLabel = prevData.notesData.company.reportingDateLabel;
 
-          // 2. Carry forward company info
           newData.notesData.company.companyName = prevData.notesData.company.companyName;
           newData.notesData.company.address = prevData.notesData.company.address;
           newData.auditData.company = prevData.auditData.company;
           newData.auditData.addr = prevData.auditData.addr;
 
-          // 3. For every section: clone prev so dynamic rows are kept, move prev CY -> new PY, new CY stays 0
           newData.notesData.sections = JSON.parse(JSON.stringify(prevData.notesData.sections));
           newData.notesData.sections.forEach(newSection => {
             newSection.rows.forEach(newRow => {
@@ -254,14 +367,7 @@ export const useAppStore = create<AppState>()(
             });
           });
 
-          // 4. Explicit Opening Balance Carry-Forward (Closing of prev year → Opening of new year)
-          // Intentionally skipped: Users prefer a globally fresh zeroed Current Year. 
-          // Opening balances will be manually inputted or driven by the UI trial balance instead to prevent cascading auto-fills confusing the SFP/PNL.
-
-          // 5. PPE Asset Carry-Forward (Closing Cost/Dep → new Opening)
-          // Preserve asset list structure from previous year
           const parsePpeValue = (v: string) => parseFloat(String(v || '').replace(/,/g, '')) || 0;
-
           newData.auditData.ppe.assets = prevData.auditData.ppe.assets.map(lastAsset => {
             const co = parsePpeValue(lastAsset.costOpening);
             const ca = parsePpeValue(lastAsset.costAddition);
@@ -284,7 +390,6 @@ export const useAppStore = create<AppState>()(
             };
           });
 
-          // Update PPE header dates
           const repYear = new Date(reportingDate).getFullYear();
           newData.auditData.ppe.headerInfo = {
             ...prevData.auditData.ppe.headerInfo,
@@ -293,7 +398,6 @@ export const useAppStore = create<AppState>()(
             yearEnd: `30 June ${String(repYear).slice(2)}`,
           };
 
-          // Calculate totals from the previous year's assets to serve as the new Comparative (Previous) Year Row
           const prevPPETotals = prevData.auditData.ppe.assets.reduce((t, asset) => {
             const co = parseFloat(String(asset.costOpening).replace(/,/g, '')) || 0;
             const ca = parseFloat(String(asset.costAddition).replace(/,/g, '')) || 0;
@@ -302,12 +406,8 @@ export const useAppStore = create<AppState>()(
             const dc = parseFloat(String(asset.depCharged).replace(/,/g, '')) || 0;
             const da = parseFloat(String(asset.depAdjustment).replace(/,/g, '')) || 0;
             return {
-              costOpening: t.costOpening + co,
-              costAddition: t.costAddition + ca,
-              costDisposal: t.costDisposal + cd,
-              depOpening: t.depOpening + do_,
-              depCharged: t.depCharged + dc,
-              depAdjustment: t.depAdjustment + da
+              costOpening: t.costOpening + co, costAddition: t.costAddition + ca, costDisposal: t.costDisposal + cd,
+              depOpening: t.depOpening + do_, depCharged: t.depCharged + dc, depAdjustment: t.depAdjustment + da
             };
           }, { costOpening: 0, costAddition: 0, costDisposal: 0, depOpening: 0, depCharged: 0, depAdjustment: 0 });
 
@@ -320,56 +420,22 @@ export const useAppStore = create<AppState>()(
             depAdjustment: prevPPETotals.depAdjustment ? prevPPETotals.depAdjustment.toString() : ''
           };
 
-          // Carry forward NotesData PPE
           newData.notesData.ppe = {
-            costClosing_cy: 0,
-            costOpening_py: prevData.notesData.ppe.costClosing_cy,
-            depClosing_cy: 0,
-            depOpening_py: prevData.notesData.ppe.depClosing_cy,
-            totalDepCharged_cy: 0,
-            adminDep_cy: 0,
-            taxBase_cy: 0,
+            costClosing_cy: 0, costOpening_py: prevData.notesData.ppe.costClosing_cy,
+            depClosing_cy: 0, depOpening_py: prevData.notesData.ppe.depClosing_cy,
+            totalDepCharged_cy: 0, adminDep_cy: 0, taxBase_cy: 0,
           };
 
-          // 6. Table Carry-Forward: Bank Accounts (CY → PY, reset CY)
-          newData.notesData.bankAccounts = prevData.notesData.bankAccounts.map(acc => ({
-            ...acc,
-            value_py: acc.value_cy,
-            value_cy: 0,
-          }));
-
-          // 7. Table Carry-Forward: Loans (CY totals → PY, reset CY)
-          newData.notesData.loans = prevData.notesData.loans.map(loan => ({
-            ...loan,
-            total_py: loan.nonCurrent_cy + loan.current_cy,
-            nonCurrent_cy: 0,
-            current_cy: 0,
-          }));
-
-          // 8. Table Carry-Forward: UPAS (CY totals → PY, reset CY)
-          newData.notesData.upasEntries = prevData.notesData.upasEntries.map(upas => ({
-            ...upas,
-            total_py: upas.nonCurrent_cy + upas.current_cy,
-            nonCurrent_cy: 0,
-            current_cy: 0,
-          }));
-
-          // 9. Carry forward shareholders list (structural, no values to reset)
+          newData.notesData.bankAccounts = prevData.notesData.bankAccounts.map(acc => ({ ...acc, value_py: acc.value_cy, value_cy: 0 }));
+          newData.notesData.loans = prevData.notesData.loans.map(loan => ({ ...loan, total_py: loan.nonCurrent_cy + loan.current_cy, nonCurrent_cy: 0, current_cy: 0 }));
+          newData.notesData.upasEntries = prevData.notesData.upasEntries.map(upas => ({ ...upas, total_py: upas.nonCurrent_cy + upas.current_cy, nonCurrent_cy: 0, current_cy: 0 }));
           newData.notesData.shareholders = JSON.parse(JSON.stringify(prevData.notesData.shareholders));
-
-          // 10. Carry forward configs
           newData.notesData.shareConfig = { ...prevData.notesData.shareConfig };
           newData.notesData.taxConfig = { ...prevData.notesData.taxConfig };
 
-          // 11. Recalculate all formulas with the new carried-forward data
           recalculate(newData.notesData);
-
         } else {
-
-          newData = {
-            auditData: getDefaultAuditData(),
-            notesData: getDefaultNotesData()
-          };
+          newData = { auditData: getDefaultAuditData(), notesData: getDefaultNotesData() };
           newData.auditData.reportingDate = reportingDate;
           newData.notesData.company.reportingDateLabel = new Date(reportingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
         }
@@ -378,51 +444,50 @@ export const useAppStore = create<AppState>()(
           id: newYearId,
           year: newYearNumber,
           reportingDate,
-          status: "in-progress",
+          status: 'in-progress',
+          reviewStatus: 'draft',
+          isLocked: false,
+          createdByUserId: currentUserId,
+          assignedStudentIds: [],
+          assignedAdminIds: [],
+          currentReviewerUserId: null,
+          finalizedByUserId: null,
+          finalizedAt: null,
+          submittedAt: null,
+          lastEditedByUserId: null,
+          reviewEvents: [],
           data: newData
         };
 
         company.financialYears.push(newFinYear);
         company.financialYears.sort((a, b) => a.year - b.year);
-
         state.activeYearId = newYearId;
       }),
 
-      setActiveYear: (id: string | null) => set(state => {
-        state.activeYearId = id;
-      }),
+      setActiveYear: (id: string | null) => set(state => { state.activeYearId = id; }),
 
       markYearCompleted: (id?: string) => set(state => {
-        const { currentUserId, activeCompanyId, activeYearId } = state;
-        const targetId = id || activeYearId;
-        if (!currentUserId || !activeCompanyId || !targetId) return;
-
-        const user = state.users.find(u => u.id === currentUserId);
-        const company = user?.companies.find(c => c.id === activeCompanyId);
+        const targetId = id || state.activeYearId;
+        const company = state.companies.find(c => c.financialYears.some(y => y.id === targetId));
         const year = company?.financialYears.find(y => y.id === targetId);
-
         if (year) {
-          year.status = "completed";
+          year.status = 'completed'; // For backward compat
+          year.reviewStatus = 'finalized';
+          year.isLocked = true;
         }
       }),
 
       deleteFinancialYear: (yearId: string) => set(state => {
-        const { currentUserId, activeCompanyId, activeYearId } = state;
-        if (!currentUserId || !activeCompanyId) return;
-        const user = state.users.find(u => u.id === currentUserId);
-        const company = user?.companies.find(c => c.id === activeCompanyId);
-        if (!company) return;
-        company.financialYears = company.financialYears.filter(y => y.id !== yearId);
-        if (activeYearId === yearId) state.activeYearId = null;
+        const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+        if (company) {
+          company.financialYears = company.financialYears.filter(y => y.id !== yearId);
+        }
+        if (state.activeYearId === yearId) state.activeYearId = null;
       }),
 
       deleteCompany: (companyId: string) => set(state => {
-        const { currentUserId, activeCompanyId } = state;
-        if (!currentUserId) return;
-        const user = state.users.find(u => u.id === currentUserId);
-        if (!user) return;
-        user.companies = user.companies.filter(c => c.id !== companyId);
-        if (activeCompanyId === companyId) {
+        state.companies = state.companies.filter(c => c.id !== companyId);
+        if (state.activeCompanyId === companyId) {
           state.activeCompanyId = null;
           state.activeYearId = null;
         }
@@ -430,36 +495,260 @@ export const useAppStore = create<AppState>()(
 
       getActiveYearData: () => {
         const state = get();
-        const user = state.users.find(u => u.id === state.currentUserId);
-        const company = user?.companies.find(c => c.id === state.activeCompanyId);
+        const company = state.companies.find(c => c.id === state.activeCompanyId);
         const year = company?.financialYears.find(y => y.id === state.activeYearId);
-        if (!year) throw new Error("No active financial year selected");
+        if (!year) throw new Error('No active financial year selected');
         return year.data;
       },
 
       updateActiveYearAuditData: (updater: (draft: AuditReportData) => void) => set(state => {
-        const { currentUserId, activeCompanyId, activeYearId } = state;
-        const user = state.users.find(u => u.id === currentUserId);
-        const company = user?.companies.find(c => c.id === activeCompanyId);
-        const year = company?.financialYears.find(y => y.id === activeYearId);
+        const company = state.companies.find(c => c.id === state.activeCompanyId);
+        const year = company?.financialYears.find(y => y.id === state.activeYearId);
         if (year) {
           updater(year.data.auditData);
+          year.lastEditedByUserId = state.currentUserId;
         }
       }),
 
       updateActiveYearNotesData: (updater: (draft: N4_13_State) => void) => set(state => {
-        const { currentUserId, activeCompanyId, activeYearId } = state;
-        const user = state.users.find(u => u.id === currentUserId);
-        const company = user?.companies.find(c => c.id === activeCompanyId);
-        const year = company?.financialYears.find(y => y.id === activeYearId);
+        const company = state.companies.find(c => c.id === state.activeCompanyId);
+        const year = company?.financialYears.find(y => y.id === state.activeYearId);
         if (year) {
           updater(year.data.notesData);
-          recalculate(year.data.notesData); // We trigger the recalculate logic directly on the draft
+          recalculate(year.data.notesData); 
+          year.lastEditedByUserId = state.currentUserId;
         }
-      })
+      }),
+
+      // --- RBAC & Review Actions ---
+
+      createUser: (name, email, role) => set(state => {
+        if (state.users.some(u => u.email === email && u.status !== 'deleted')) {
+           throw new Error('User already exists');
+        }
+        state.users.push({
+           id: uuidv4(), name, email, role, status: 'active',
+           assignedCompanyIds: [], notifications: []
+        });
+      }),
+
+      updateUserRole: (userId, role) => set(state => {
+         const user = state.users.find(u => u.id === userId);
+         if (user) user.role = role;
+      }),
+
+      banUser: (userId, reason) => set(state => {
+        const user = state.users.find(u => u.id === userId);
+        if (user) {
+           user.status = 'banned';
+           user.bannedReason = reason;
+           user.bannedByUserId = state.currentUserId || undefined;
+        }
+      }),
+
+      unbanUser: (userId) => set(state => {
+        const user = state.users.find(u => u.id === userId);
+        if (user) {
+           user.status = 'active';
+           user.bannedReason = undefined;
+           user.bannedByUserId = undefined;
+        }
+      }),
+
+      softDeleteUser: (userId) => set(state => {
+        const user = state.users.find(u => u.id === userId);
+        if (user) user.status = 'deleted';
+      }),
+
+      assignStudentToAdmin: (studentId, adminId) => set(state => {
+         const admin = state.users.find(u => u.id === adminId);
+         if (admin && !admin.assignedStudentIds?.includes(studentId)) {
+            admin.assignedStudentIds = [...(admin.assignedStudentIds || []), studentId];
+         }
+      }),
+
+      unassignStudentFromAdmin: (studentId, adminId) => set(state => {
+         const admin = state.users.find(u => u.id === adminId);
+         if (admin && admin.assignedStudentIds) {
+            admin.assignedStudentIds = admin.assignedStudentIds.filter(id => id !== studentId);
+         }
+      }),
+
+      assignCompanyToUser: (userId, companyId) => set(state => {
+         const user = state.users.find(u => u.id === userId);
+         if (user && !user.assignedCompanyIds.includes(companyId)) {
+           user.assignedCompanyIds.push(companyId);
+         }
+      }),
+
+      unassignCompanyFromUser: (userId, companyId) => set(state => {
+         const user = state.users.find(u => u.id === userId);
+         if (user) {
+           user.assignedCompanyIds = user.assignedCompanyIds.filter(id => id !== companyId);
+         }
+      }),
+
+      submitFinancialYear: (yearId, note) => set(state => {
+         const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+         const year = company?.financialYears.find(y => y.id === yearId);
+         if (year) {
+           year.reviewStatus = 'submitted';
+           year.submittedAt = new Date().toISOString();
+           year.reviewEvents.push({
+             id: uuidv4(), type: 'submitted',
+             actorUserId: state.currentUserId!, actorRole: 'student',
+             createdAt: new Date().toISOString(), note
+           });
+         }
+      }),
+
+      startFinancialYearReview: (yearId) => set(state => {
+         const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+         const year = company?.financialYears.find(y => y.id === yearId);
+         if (year) {
+           year.reviewStatus = 'under_review';
+           year.currentReviewerUserId = state.currentUserId;
+           year.reviewEvents.push({
+             id: uuidv4(), type: 'under_review',
+             actorUserId: state.currentUserId!, actorRole: 'admin',
+             createdAt: new Date().toISOString()
+           });
+         }
+      }),
+
+      requestFinancialYearChanges: (yearId, note) => set(state => {
+         const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+         const year = company?.financialYears.find(y => y.id === yearId);
+         if (year) {
+           year.reviewStatus = 'changes_requested';
+           year.reviewEvents.push({
+             id: uuidv4(), type: 'changes_requested',
+             actorUserId: state.currentUserId!, actorRole: 'admin',
+             createdAt: new Date().toISOString(), note
+           });
+         }
+      }),
+
+      finalizeFinancialYear: (yearId, note) => set(state => {
+         const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+         const year = company?.financialYears.find(y => y.id === yearId);
+         if (year) {
+           year.reviewStatus = 'finalized';
+           year.isLocked = true;
+           year.status = 'completed'; // Compat
+           year.finalizedAt = new Date().toISOString();
+           year.finalizedByUserId = state.currentUserId;
+           year.reviewEvents.push({
+             id: uuidv4(), type: 'finalized',
+             actorUserId: state.currentUserId!, actorRole: 'admin',
+             createdAt: new Date().toISOString(), note
+           });
+         }
+      }),
+
+      reopenFinancialYear: (yearId, note) => set(state => {
+         const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+         const year = company?.financialYears.find(y => y.id === yearId);
+         if (year) {
+           year.reviewStatus = 'draft';
+           year.isLocked = false;
+           year.status = 'in-progress'; // Compat
+           year.finalizedAt = null;
+           year.finalizedByUserId = null;
+           year.reviewEvents.push({
+             id: uuidv4(), type: 'reopened',
+             actorUserId: state.currentUserId!, actorRole: 'admin',
+             createdAt: new Date().toISOString(), note
+           });
+         }
+      }),
+
+      markNotificationRead: (notificationId) => set(state => {
+         const user = state.users.find(u => u.id === state.currentUserId);
+         if (user) {
+            const notif = user.notifications.find(n => n.id === notificationId);
+            if (notif) notif.read = true;
+         }
+      }),
+
+      pushNotification: (userId, notification) => set(state => {
+         const user = state.users.find(u => u.id === userId);
+         if (user) {
+            user.notifications.unshift({
+               ...notification,
+               id: uuidv4(),
+               createdAt: new Date().toISOString(),
+               read: false
+            });
+         }
+      }),
+
     })),
     {
-      name: 'audit-x-platform-storage', // The master key in localStorage
+      name: 'audit-x-platform-storage',
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0 || !version) {
+          const oldUsers = persistedState.users || [];
+          const newUsers: User[] = [];
+          const newCompanies: Company[] = [];
+
+          oldUsers.forEach((oldUser: any) => {
+            const newUser: User = {
+              id: oldUser.id,
+              name: oldUser.name,
+              email: oldUser.email,
+              role: oldUser.role || 'student',
+              status: oldUser.status || 'active',
+              bannedReason: oldUser.bannedReason,
+              bannedByUserId: oldUser.bannedByUserId,
+              profileImg: oldUser.profileImg,
+              assignedCompanyIds: oldUser.assignedCompanyIds || [],
+              assignedStudentIds: oldUser.assignedStudentIds || [],
+              assignedAdminIds: oldUser.assignedAdminIds || [],
+              notifications: oldUser.notifications || []
+            };
+
+            if (oldUser.companies && Array.isArray(oldUser.companies)) {
+              oldUser.companies.forEach((oldComp: any) => {
+                const compId = oldComp.id;
+                if (!newUser.assignedCompanyIds.includes(compId)) {
+                  newUser.assignedCompanyIds.push(compId);
+                }
+                const migratedYears = (oldComp.financialYears || []).map((y: any) => ({
+                   ...y,
+                   reviewStatus: y.reviewStatus || (y.status === 'completed' ? 'finalized' : 'draft'),
+                   isLocked: y.isLocked ?? (y.status === 'completed'),
+                   createdByUserId: y.createdByUserId || oldUser.id,
+                   assignedStudentIds: y.assignedStudentIds || [],
+                   assignedAdminIds: y.assignedAdminIds || [],
+                   currentReviewerUserId: y.currentReviewerUserId || null,
+                   finalizedByUserId: y.finalizedByUserId || null,
+                   finalizedAt: y.finalizedAt || null,
+                   submittedAt: y.submittedAt || null,
+                   lastEditedByUserId: y.lastEditedByUserId || null,
+                   reviewEvents: y.reviewEvents || []
+                }));
+
+                newCompanies.push({
+                  id: compId,
+                  name: oldComp.name,
+                  createdByUserId: oldUser.id,
+                  financialYears: migratedYears
+                });
+              });
+            }
+            newUsers.push(newUser);
+          });
+
+          return {
+            ...persistedState,
+            users: newUsers,
+            companies: newCompanies
+          };
+        }
+        return persistedState as AppState;
+      }
     }
   )
 );

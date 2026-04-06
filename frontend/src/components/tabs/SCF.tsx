@@ -16,8 +16,7 @@ export const SCF: React.FC<SCFProps> = ({ data }) => {
   const appState = useAppStore();
 
   const getPrevYearNotes = () => {
-    const user = appState.users.find(u => u.id === appState.currentUserId);
-    const company = user?.companies.find(c => c.id === appState.activeCompanyId);
+    const company = appState.companies.find(c => c.id === appState.activeCompanyId);
     if (!company) return null;
     const sortedYears = [...company.financialYears].sort((a, b) => a.year - b.year);
     const currentIndex = sortedYears.findIndex(y => y.id === appState.activeYearId);

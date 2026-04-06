@@ -1,8 +1,7 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { Sidebar } from './Sidebar';
-import { CompanyDashboard } from './CompanyDashboard';
 
 export const DashboardLayout: React.FC = () => {
   const currentUserId = useAppStore(state => state.currentUserId);
@@ -14,7 +13,7 @@ export const DashboardLayout: React.FC = () => {
   return (
     <div className="flex h-screen w-full bg-[#121212] overflow-hidden font-sans">
       <Sidebar />
-      <CompanyDashboard />
+      <Outlet />
     </div>
   );
 };

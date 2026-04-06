@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { Pencil, Check, X } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, authSelectors, permissionSelectors } from '../../store/useAppStore';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Sidebar: React.FC = () => {
-  const users = useAppStore(state => state.users);
-  const currentUserId = useAppStore(state => state.currentUserId);
-  const currentUser = users.find(u => u.id === currentUserId);
+  const currentUser = useAppStore(authSelectors.getCurrentUser);
+  const allCompanies = useAppStore(state => state.companies);
 
   const activeCompanyId = useAppStore(state => state.activeCompanyId);
   const setActiveCompany = useAppStore(state => state.setActiveCompany);
   const createCompany = useAppStore(state => state.createCompany);
   const updateCompany = useAppStore(state => state.updateCompany);
   const logout = useAppStore(state => state.logout);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [isCreating, setIsCreating] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -20,6 +23,8 @@ export const Sidebar: React.FC = () => {
   const [editedCompanyName, setEditedCompanyName] = useState('');
 
   if (!currentUser) return null;
+
+  const visibleCompanies = allCompanies.filter(c => permissionSelectors.canAccessCompany(currentUser, c));
 
   const handleCreateCompany = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,10 +59,39 @@ export const Sidebar: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         <div>
+          {currentUser.role !== 'student' && (
+            <div className="mb-8 space-y-2">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Management</div>
+              <button
+                onClick={() => navigate('/dashboard/my-companies')}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all focus:outline-none ${location.pathname.includes('/my-companies') ? 'bg-blue-600/20 text-blue-400 font-medium border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+              >
+                My assigned companies
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/admin')}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all focus:outline-none ${location.pathname.includes('/admin') ? 'bg-blue-600/20 text-blue-400 font-medium border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+              >
+                Firm Operations (Admin)
+              </button>
+              {currentUser.role === 'super_admin' && (
+                <button
+                  onClick={() => navigate('/dashboard/system')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all focus:outline-none ${location.pathname.includes('/system') ? 'bg-red-600/20 text-red-400 font-medium border border-red-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+                >
+                  System Config (Super Admin)
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-400 uppercase tracking-wider">
             <span>Companies</span>
             <button
-              onClick={() => setIsCreating(!isCreating)}
+              onClick={() => {
+                 navigate('/dashboard/my-companies');
+                 setIsCreating(!isCreating);
+              }}
               className="text-blue-400 hover:text-blue-300"
             >
               +
@@ -79,7 +113,7 @@ export const Sidebar: React.FC = () => {
           )}
 
           <div className="space-y-1">
-            {currentUser.companies.map(company => (
+            {visibleCompanies.map(company => (
               <div
                 key={company.id}
                 className="group relative"
@@ -105,8 +139,11 @@ export const Sidebar: React.FC = () => {
                   </form>
                 ) : (
                   <button
-                    onClick={() => setActiveCompany(company.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none flex justify-between items-center ${activeCompanyId === company.id
+                    onClick={() => {
+                        setActiveCompany(company.id);
+                        navigate('/dashboard/my-companies');
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none flex justify-between items-center ${activeCompanyId === company.id && location.pathname.includes('/my-companies')
                       ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20'
                       : 'text-gray-300 hover:bg-[#2a2a2a]'
                       }`}
@@ -123,7 +160,7 @@ export const Sidebar: React.FC = () => {
                 )}
               </div>
             ))}
-            {currentUser.companies.length === 0 && !isCreating && (
+            {visibleCompanies.length === 0 && !isCreating && (
               <p className="text-gray-500 text-sm text-center py-4 italic">No companies yet</p>
             )}
           </div>
@@ -137,7 +174,12 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-white truncate">{currentUser.name}</p>
-            <p className="text-xs text-gray-400 truncate">{currentUser.email}</p>
+            <p className="text-xs text-gray-400 flex items-center space-x-2">
+               <span className="truncate">{currentUser.email}</span>
+               <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-blue-500/20 text-blue-400">
+                 {currentUser.role.replace('_', ' ')}
+               </span>
+            </p>
           </div>
         </div>
         <button
