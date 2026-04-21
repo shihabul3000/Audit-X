@@ -50,10 +50,15 @@ export const Sidebar: React.FC = () => {
     if (!newCompanyName.trim()) return;
     const toastId = toast.loading('Creating company...');
     try {
-      await companyService.create(newCompanyName.trim());
+      const res = await companyService.create(newCompanyName.trim());
       setIsCreating(false);
       setNewCompanyName('');
       await fetchCompanies();
+      // Auto-select the newly created company
+      if (res.data?.id) {
+        setActiveCompany(res.data.id);
+        navigate('/dashboard/my-companies');
+      }
       toast.success('Company created', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Failed to create company', { id: toastId });

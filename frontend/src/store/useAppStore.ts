@@ -26,8 +26,10 @@ export interface User {
   name: string;
   email: string;
   profileImg?: string;
+  profileImage?: string;
   role: UserRole;
   status: 'ACTIVE' | 'BANNED' | 'DELETED';
+  emailVerified?: boolean;
   bannedReason?: string;
   bannedByUserId?: string;
   

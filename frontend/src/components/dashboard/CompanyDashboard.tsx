@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore, authSelectors, permissionSelectors } from '../../store/useAppStore';
 import { Trash2, Send, Lock, Unlock, Eye, AlertCircle, Plus, Check } from 'lucide-react';
 import { financialYearService } from '../../services/financialYear.service';
+import { financialDataService } from '../../services/financialData.service';
 import { companyService } from '../../services/company.service';
 import { reviewService } from '../../services/review.service';
 import toast from 'react-hot-toast';
@@ -18,16 +19,16 @@ export const CompanyDashboard: React.FC = () => {
   const [financialYears, setFinancialYears] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  
+
   const currentYear = new Date().getFullYear();
   const [newDate, setNewDate] = useState(`${currentYear}-06-30`);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; year: number } | null>(null);
 
   const activeCompany = companies.find(c => c.id === activeCompanyId);
-  
-  // Note: we're using partial objects from our local list, real perms might need a full company object
-  const hasAccess = true; // Temporary simplification, normally read from currentUser logic
+  const hasAccess = activeCompany
+    ? permissionSelectors.canAccessCompany(currentUser, activeCompany)
+    : false;
 
   const loadFinancialYears = async () => {
     if (!activeCompanyId) return;
@@ -58,7 +59,21 @@ export const CompanyDashboard: React.FC = () => {
     );
   }
 
-  const handleOpenYear = (yearId: string) => {
+  const handleOpenYear = async (yearId: string) => {
+    try {
+      const data = await financialDataService.getByYearId(yearId);
+      useAppStore.getState().companies.forEach(c => {
+        if (c.id === activeCompanyId) {
+          c.financialYears.forEach(y => {
+            if (y.id === yearId) {
+              y.data = data.data;
+            }
+          });
+        }
+      });
+    } catch (err) {
+      console.error('Failed to load year data:', err);
+    }
     setActiveYearId(yearId);
     navigate(`/fs/cover`);
   };
@@ -84,9 +99,20 @@ export const CompanyDashboard: React.FC = () => {
     try {
       await reviewService.submitForReview(yearId);
       toast.success('Submitted successfully', { id: toastId });
-      loadFinancialYears();
+      await loadFinancialYears();
     } catch (err: any) {
       toast.error(err.message || 'Submit failed', { id: toastId });
+    }
+  };
+
+  const startReview = async (yearId: string) => {
+    const toastId = toast.loading('Starting review...');
+    try {
+      await reviewService.startReview(yearId);
+      toast.success('Review started', { id: toastId });
+      await loadFinancialYears();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start review', { id: toastId });
     }
   };
 
@@ -97,7 +123,7 @@ export const CompanyDashboard: React.FC = () => {
     try {
       await reviewService.requestChanges(yearId, note);
       toast.success('Revisions requested', { id: toastId });
-      loadFinancialYears();
+      await loadFinancialYears();
     } catch (err: any) {
       toast.error(err.message || 'Action failed', { id: toastId });
     }
@@ -109,7 +135,7 @@ export const CompanyDashboard: React.FC = () => {
     try {
       await reviewService.finalizeReview(yearId);
       toast.success('Finalized and locked', { id: toastId });
-      loadFinancialYears();
+      await loadFinancialYears();
     } catch (err: any) {
       toast.error(err.message || 'Action failed', { id: toastId });
     }
@@ -122,7 +148,7 @@ export const CompanyDashboard: React.FC = () => {
       await financialYearService.delete(activeCompanyId, deleteTarget.id);
       toast.success('Deleted permanently', { id: toastId });
       setDeleteTarget(null);
-      loadFinancialYears();
+      await loadFinancialYears();
     } catch (err: any) {
       toast.error(err.message || 'Delete failed', { id: toastId });
     }
@@ -208,7 +234,15 @@ export const CompanyDashboard: React.FC = () => {
                         )}
                         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN') && (
                           <>
-                            {(fy.reviewStatus === 'SUBMITTED' || fy.reviewStatus === 'UNDER_REVIEW') && !fy.isLocked && (
+                            {fy.reviewStatus === 'SUBMITTED' && !fy.isLocked && (
+                              <button
+                                onClick={() => startReview(fy.id)}
+                                className="text-purple-400 hover:text-purple-300 text-xs font-medium transition-colors border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-1.5 rounded"
+                              >
+                                Start Review
+                              </button>
+                            )}
+                            {fy.reviewStatus === 'UNDER_REVIEW' && !fy.isLocked && (
                               <button
                                 onClick={() => requestRevisions(fy.id)}
                                 className="text-amber-400 hover:text-amber-300 text-xs font-medium transition-colors border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1.5 rounded"
@@ -220,7 +254,7 @@ export const CompanyDashboard: React.FC = () => {
                               <span className="text-emerald-500/50 text-xs font-medium flex items-center">
                                 <Lock size={12} className="mr-1" /> Finalized
                               </span>
-                            ) : (fy.reviewStatus === 'SUBMITTED' || fy.reviewStatus === 'UNDER_REVIEW') && (
+                            ) : fy.reviewStatus === 'UNDER_REVIEW' && (
                               <button
                                 onClick={() => finalizeYear(fy.id)}
                                 className="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1.5 rounded flex items-center"

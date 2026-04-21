@@ -180,21 +180,21 @@ export const update = async (
 };
 
 export const softDelete = async (id: string, userId: string, role: string) => {
+  const company = await prisma.company.findUnique({ where: { id } });
+  if (!company || company.isDeleted) {
+    throw ApiError.notFound("Company not found");
+  }
+
   const hasAccessResult = await hasAccess(userId, role, id);
   if (!hasAccessResult) {
     throw ApiError.forbidden("You don't have access to this company");
   }
 
-  const company = await prisma.company.update({
+  return prisma.company.update({
     where: { id },
     data: { isDeleted: true },
-    select: {
-      id: true,
-      name: true,
-    },
+    select: { id: true, name: true },
   });
-
-  return company;
 };
 
 export const assign = async (

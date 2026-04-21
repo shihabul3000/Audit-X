@@ -15,7 +15,7 @@ async function main() {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash('Admin@123456', 12);
+  const hashedPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'Admin@123456', 12);
 
   await prisma.user.create({
     data: {
