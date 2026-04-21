@@ -8,6 +8,7 @@ import {
 } from "./auth.utils";
 import { config } from "../../config";
 import { sendEmail } from "../../config/mailer";
+import crypto from "crypto";
 
 export const register = async (
   name: string,
@@ -49,12 +50,18 @@ export const register = async (
 
   await sendEmail({
     to: user.email,
-    subject: "Verify your email",
+    subject: "Verify your email — Audit-X",
     text: `Your OTP is: ${otp}. It expires in ${config.OTP_EXPIRES_MINUTES} minutes.`,
-    html: `<p>Your OTP is: <strong>${otp}</strong>. It expires in ${config.OTP_EXPIRES_MINUTES} minutes.</p>`,
+    html: `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in ${config.OTP_EXPIRES_MINUTES} minutes.</p>`,
   });
 
-  return user;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    emailVerified: user.emailVerified,
+  };
 };
 
 export const login = async (email: string, password: string) => {
@@ -66,13 +73,49 @@ export const login = async (email: string, password: string) => {
     throw ApiError.unauthorized("Invalid credentials");
   }
 
+  if (user.isDeleted || user.status === "DELETED") {
+    throw ApiError.unauthorized("Account has been deleted");
+  }
+
+  if (user.status === "BANNED") {
+    throw ApiError.forbidden(
+      `Your account has been suspended.${user.bannedReason ? ` Reason: ${user.bannedReason}` : ""}`
+    );
+  }
+
   const isValidPassword = await comparePassword(password, user.password);
 
   if (!isValidPassword) {
     throw ApiError.unauthorized("Invalid credentials");
   }
 
-  return user;
+  if (!user.emailVerified) {
+    // Still return user info so frontend can redirect to verify page
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        emailVerified: false,
+      },
+      requiresVerification: true,
+    };
+  }
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      profileImage: user.profileImage,
+      needPasswordChange: user.needPasswordChange,
+    },
+    requiresVerification: false,
+  };
 };
 
 export const logout = async (res: any) => {
@@ -126,7 +169,10 @@ export const changePassword = async (
 
   await prisma.user.update({
     where: { id: userId },
-    data: { password: hashedPassword },
+    data: {
+      password: hashedPassword,
+      needPasswordChange: false,
+    },
   });
 };
 
@@ -154,8 +200,9 @@ export const verifyEmail = async (email: string, otp: string) => {
     data: { emailVerified: true },
   });
 
-  await prisma.oTP.delete({
-    where: { id: otpRecord.id },
+  // Clean up all OTPs for this email
+  await prisma.oTP.deleteMany({
+    where: { email },
   });
 };
 
@@ -166,6 +213,10 @@ export const resendOtp = async (email: string) => {
 
   if (!user) {
     throw ApiError.notFound("User not found");
+  }
+
+  if (user.emailVerified) {
+    throw ApiError.badRequest("Email is already verified");
   }
 
   await prisma.oTP.deleteMany({
@@ -187,9 +238,9 @@ export const resendOtp = async (email: string) => {
 
   await sendEmail({
     to: email,
-    subject: "Resend OTP",
+    subject: "Your new verification code — Audit-X",
     text: `Your OTP is: ${otp}. It expires in ${config.OTP_EXPIRES_MINUTES} minutes.`,
-    html: `<p>Your OTP is: <strong>${otp}</strong>. It expires in ${config.OTP_EXPIRES_MINUTES} minutes.</p>`,
+    html: `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in ${config.OTP_EXPIRES_MINUTES} minutes.</p>`,
   });
 };
 
@@ -198,13 +249,24 @@ export const forgotPassword = async (email: string) => {
     where: { email },
   });
 
+  // Don't reveal whether user exists
   if (!user) {
     return;
   }
 
+  // Invalidate any existing tokens
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, used: false },
+    data: { used: true },
+  });
+
   const resetToken = generateResetToken();
-  const hashedToken = resetToken;
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  // Hash the token before storing
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
   await prisma.passwordResetToken.create({
     data: {
@@ -214,21 +276,26 @@ export const forgotPassword = async (email: string) => {
     },
   });
 
+  const resetUrl = `${config.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
+
   await sendEmail({
     to: user.email,
-    subject: "Reset your password",
-    text: `Use this token to reset your password: ${resetToken}`,
-    html: `<p>Use this token to reset your password: <strong>${resetToken}</strong></p>`,
+    subject: "Reset your password — Audit-X",
+    text: `Click here to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.`,
+    html: `<p>Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 1 hour.</p>`,
   });
 };
 
-export const resetPassword = async (
-  token: string,
-  newPassword: string
-) => {
+export const resetPassword = async (token: string, newPassword: string) => {
+  // Hash the incoming token to compare with stored hash
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
   const tokenRecord = await prisma.passwordResetToken.findFirst({
     where: {
-      token,
+      token: hashedToken,
       used: false,
     },
     orderBy: {

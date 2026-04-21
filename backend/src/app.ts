@@ -11,6 +11,7 @@ import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/user/user.routes";
 import companyRoutes from "./modules/company/company.routes";
 import financialDataRoutes from "./modules/financial-data/financialData.routes";
+import financialYearRoutes from "./modules/financial-year/financialYear.routes";
 import reviewRoutes from "./modules/review/review.routes";
 import { globalErrorHandler } from "./middleware/error.middleware";
 
@@ -40,6 +41,8 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/companies", companyRoutes);
 
 app.use("/api/v1/financial-data", financialDataRoutes);
+
+app.use("/api/v1/companies/:companyId/years", financialYearRoutes);
 
 app.use("/api/v1/reviews", reviewRoutes);
 

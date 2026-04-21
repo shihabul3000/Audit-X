@@ -1,6 +1,7 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 import * as authService from "./auth.service";
+import { auth } from "./auth.utils";
 
 const sendResponse = (
   res: Response,
@@ -9,6 +10,7 @@ const sendResponse = (
   data: unknown
 ) => {
   res.status(statusCode).json({
+    success: true,
     message,
     statusCode,
     data,
@@ -16,28 +18,52 @@ const sendResponse = (
 };
 
 export const register = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const { name, email, password } = req.body;
     const user = await authService.register(name, email, password);
-    sendResponse(res, 201, "User registered successfully", user);
+    sendResponse(res, 201, "User registered successfully. Please verify your email.", user);
   } catch (error) {
     next(error);
   }
 };
 
 export const login = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const { email, password } = req.body;
-    const user = await authService.login(email, password);
-    sendResponse(res, 200, "Login successful", user);
+    const result = await authService.login(email, password);
+
+    if (result.requiresVerification) {
+      return sendResponse(res, 200, "Email verification required", {
+        user: result.user,
+        requiresVerification: true,
+      });
+    }
+
+    // Create Better Auth session
+    const session = await auth.api.signInEmail({
+      body: { email, password },
+    });
+
+    if (session && 'headers' in session) {
+      // Forward set-cookie headers from Better Auth
+      const setCookieHeader = (session as any).headers?.get?.("set-cookie");
+      if (setCookieHeader) {
+        res.setHeader("set-cookie", setCookieHeader);
+      }
+    }
+
+    sendResponse(res, 200, "Login successful", {
+      user: result.user,
+      requiresVerification: false,
+    });
   } catch (error) {
     next(error);
   }
@@ -84,7 +110,7 @@ export const changePassword = async (
 };
 
 export const verifyEmail = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -98,7 +124,7 @@ export const verifyEmail = async (
 };
 
 export const resendOtp = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -112,7 +138,7 @@ export const resendOtp = async (
 };
 
 export const forgotPassword = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -126,7 +152,7 @@ export const forgotPassword = async (
 };
 
 export const resetPassword = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {

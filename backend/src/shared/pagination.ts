@@ -6,7 +6,7 @@ export interface PaginationParams {
 
 export interface PaginationResult<T> {
   data: T[];
-  pagination: {
+  meta: {
     page: number;
     limit: number;
     total: number;
@@ -22,20 +22,24 @@ export const getPagination = (page = 1, limit = 10): PaginationParams => {
   return {
     page: pageNum,
     limit: limitNum,
-    skip: (pageNum - 1) * limitNum
+    skip: (pageNum - 1) * limitNum,
   };
 };
 
-export const paginate = <T>(data: T[], { page, limit, skip }: PaginationParams, total: number): PaginationResult<T> => {
+export const paginate = <T>(
+  data: T[],
+  { page, limit }: PaginationParams,
+  total: number
+): PaginationResult<T> => {
   return {
-    data: data.slice(skip, skip + limit),
-    pagination: {
+    data,
+    meta: {
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
       hasNext: page * limit < total,
-      hasPrev: page > 1
-    }
+      hasPrev: page > 1,
+    },
   };
 };
