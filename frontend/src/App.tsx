@@ -19,12 +19,17 @@ import { PlaceholderTab } from './components/tabs/PlaceholderTab';
 
 import { LandingPage } from './components/landing/LandingPage';
 import { AuthPage } from './components/auth/AuthPage';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
+import { VerifyEmail } from './components/auth/VerifyEmail';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { CompanyDashboard } from './components/dashboard/CompanyDashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { SuperAdminDashboard } from './components/dashboard/SuperAdminDashboard';
+import { ProfilePage } from './components/dashboard/ProfilePage';
 import { useAppStore, authSelectors, permissionSelectors } from './store/useAppStore';
 import { AlertCircle } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 
 function AppContent() {
   const { data, updateData, isLoaded } = useAuditData();
@@ -134,12 +139,17 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/forgot" element={<ForgotPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/verify" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Navigate to="my-companies" replace />} />
           <Route path="my-companies" element={<CompanyDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="system" element={<SuperAdminDashboard />} />
         </Route>
