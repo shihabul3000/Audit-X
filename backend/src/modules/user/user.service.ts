@@ -2,7 +2,7 @@ import { prisma } from "../../config/prismaClient";
 import { ApiError } from "../../shared/ApiError";
 import { hashPassword } from "../auth/auth.utils";
 import { paginate, getPagination } from "../../shared/pagination";
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 
 export const getAll = async (query: {
   page?: number;
@@ -16,8 +16,8 @@ export const getAll = async (query: {
 
   const where: Prisma.UserWhereInput = {
     isDeleted: false,
-    ...(role && { role: role as Prisma.UserRole }),
-    ...(status && { status: status as Prisma.UserStatus }),
+    ...(role && { role: role as UserRole }),
+    ...(status && { status: status as UserStatus }),
     ...(searchTerm && {
       OR: [
         { name: { contains: searchTerm, mode: "insensitive" } },
@@ -39,7 +39,7 @@ export const getAll = async (query: {
         role: true,
         status: true,
         emailVerified: true,
-        profileImage: true,
+        profileImage: true, isDeleted: true,
         needPasswordChange: true,
         bannedReason: true,
         bannedByUserId: true,
@@ -63,7 +63,7 @@ export const getById = async (id: string) => {
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       bannedReason: true,
       bannedByUserId: true,
@@ -104,7 +104,7 @@ export const createUser = async (data: {
       name: data.name,
       email: data.email,
       password: hashedPassword,
-      role: data.role as Prisma.UserRole,
+      role: data.role as UserRole,
       emailVerified: true,
       needPasswordChange: true,
     },
@@ -115,7 +115,7 @@ export const createUser = async (data: {
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       createdAt: true,
       updatedAt: true,
@@ -145,7 +145,7 @@ export const update = async (id: string, data: { name?: string; email?: string }
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       createdAt: true,
       updatedAt: true,
@@ -158,7 +158,7 @@ export const update = async (id: string, data: { name?: string; email?: string }
 export const changeRole = async (id: string, role: string) => {
   const user = await prisma.user.update({
     where: { id },
-    data: { role: role as Prisma.UserRole },
+    data: { role: role as UserRole },
     select: {
       id: true,
       name: true,
@@ -166,7 +166,7 @@ export const changeRole = async (id: string, role: string) => {
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       bannedReason: true,
       bannedByUserId: true,
@@ -268,7 +268,7 @@ export const getMyProfile = async (userId: string) => {
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       createdAt: true,
       updatedAt: true,
@@ -297,7 +297,7 @@ export const updateMyProfile = async (userId: string, data: { name?: string }) =
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       createdAt: true,
       updatedAt: true,
@@ -320,7 +320,7 @@ export const uploadProfileImage = async (userId: string, filename: string) => {
       role: true,
       status: true,
       emailVerified: true,
-      profileImage: true,
+      profileImage: true, isDeleted: true,
       needPasswordChange: true,
       createdAt: true,
       updatedAt: true,

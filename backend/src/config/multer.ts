@@ -9,7 +9,7 @@ export const multerUpload = multer({
       cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-      const userId = req.user?.id || "unknown";
+      const userId = (req as any).user?.id || "unknown";
       const timestamp = Date.now();
       const ext = path.extname(file.originalname).toLowerCase();
       cb(null, `${userId}-${timestamp}${ext}`);
