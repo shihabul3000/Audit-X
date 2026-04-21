@@ -34,7 +34,7 @@ export const CompanyDashboard: React.FC = () => {
     setLoading(true);
     try {
       const response = await financialYearService.getAllByCompany(activeCompanyId);
-      setFinancialYears(response.data);
+      setFinancialYears(response.data.data);
     } catch (err: any) {
       toast.error(err.message || 'Failed to load financial years');
     } finally {

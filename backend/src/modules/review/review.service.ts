@@ -263,6 +263,10 @@ export const reopen = async (
 ) => {
   const year = await checkUserAccess(yearId, userId, role);
 
+  if (year.reviewStatus === "DRAFT") {
+    throw ApiError.badRequest("Year is already in draft state");
+  }
+
   const updated = await prisma.financialYear.update({
     where: { id: yearId },
     data: {

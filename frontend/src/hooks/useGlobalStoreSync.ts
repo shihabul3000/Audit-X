@@ -60,5 +60,5 @@ export const useGlobalStoreSync = (data: AuditReportData) => {
         adminDep_cy: adminDep,
       });
     }
-  }, [reportingDateLabel, priorDateLabel, data, store.updateCompanyInfo, store.updatePPESummary]);
+  }, [reportingDateLabel, priorDateLabel, data]);
 };

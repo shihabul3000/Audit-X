@@ -5,6 +5,7 @@ import {
   comparePassword,
   generateOTP,
   generateResetToken,
+  auth,
 } from "./auth.utils";
 import { config } from "../../config";
 import { sendEmail } from "../../config/mailer";
@@ -118,7 +119,14 @@ export const login = async (email: string, password: string) => {
   };
 };
 
-export const logout = async (res: any) => {
+export const logout = async (res: any, req?: any) => {
+  try {
+    if (req) {
+      await auth.api.signOut({ headers: req.headers });
+    }
+  } catch {
+    // Ignore Better Auth signout errors
+  }
   res.clearCookie("better-auth.session_token");
 };
 
@@ -181,6 +189,7 @@ export const verifyEmail = async (email: string, otp: string) => {
     where: {
       email,
       otp,
+      expiresAt: { gt: new Date() },
     },
     orderBy: {
       createdAt: "desc",
@@ -188,11 +197,7 @@ export const verifyEmail = async (email: string, otp: string) => {
   });
 
   if (!otpRecord) {
-    throw ApiError.badRequest("Invalid OTP");
-  }
-
-  if (otpRecord.expiresAt < new Date()) {
-    throw ApiError.badRequest("OTP has expired");
+    throw ApiError.badRequest("Invalid or expired OTP");
   }
 
   await prisma.user.update({

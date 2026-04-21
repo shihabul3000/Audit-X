@@ -17,7 +17,7 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   secret: config.BETTER_AUTH_SECRET,
-  trustedOrigins: [config.BETTER_AUTH_URL],
+  trustedOrigins: [config.FRONTEND_URL],
 });
 
 export const hashPassword = async (password: string): Promise<string> => {

@@ -8,14 +8,14 @@ export const financialDataService = {
   },
 
   updateAuditData: async (yearId: string, auditReportData: any) => {
-    return httpClient.patch(`${API_URL}/${yearId}/audit`, { auditReportData });
+    return httpClient.patch(`${API_URL}/${yearId}/audit-report-data`, auditReportData);
   },
 
   updateNotesData: async (yearId: string, notesData: any) => {
-    return httpClient.patch(`${API_URL}/${yearId}/notes`, { notesData });
+    return httpClient.patch(`${API_URL}/${yearId}/notes-data`, notesData);
   },
 
   updateDiscussionData: async (yearId: string, discussionData: any) => {
-    return httpClient.patch(`${API_URL}/${yearId}/discussion`, { discussionData });
+    return httpClient.patch(`${API_URL}/${yearId}/discussion-data`, discussionData);
   },
 };

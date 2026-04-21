@@ -1,6 +1,6 @@
 import { app } from "./app";
 import { config } from "./config";
-import prisma from "./config/prismaClient";
+import { prisma } from "./config/prismaClient";
 
 const server = app.listen(config.PORT, async () => {
   console.log(`Server running on port ${config.PORT} in ${config.NODE_ENV} mode`);

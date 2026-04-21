@@ -19,7 +19,11 @@ export const DashboardLayout: React.FC = () => {
       try {
         const response = await authService.getMe();
         if (mounted) {
-          setCurrentUser(response.data);
+          setCurrentUser({
+            ...response.data,
+            assignedCompanyIds: response.data.assignedCompanyIds || [],
+            notifications: response.data.notifications || [],
+          });
           fetchCompanies();
         }
       } catch (error) {

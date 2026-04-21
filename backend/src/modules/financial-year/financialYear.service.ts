@@ -215,7 +215,16 @@ export const update = async (
 
   const updateData: any = { ...data };
   if (data.reportingDate) {
-    updateData.year = new Date(data.reportingDate).getFullYear();
+    const newYearNum = new Date(data.reportingDate).getFullYear();
+    if (newYearNum !== year.year) {
+      const conflict = await prisma.financialYear.findUnique({
+        where: { companyId_year: { companyId, year: newYearNum } },
+      });
+      if (conflict) {
+        throw ApiError.conflict(`Financial year ${newYearNum} already exists for this company`);
+      }
+    }
+    updateData.year = newYearNum;
   }
 
   const updatedYear = await prisma.financialYear.update({
@@ -258,21 +267,12 @@ export const remove = async (
     throw ApiError.notFound("Financial year not found");
   }
 
-  await prisma.auditData.delete({
-    where: { yearId },
-  });
-
-  await prisma.reviewEvent.deleteMany({
-    where: { yearId },
-  });
-
-  await prisma.notification.deleteMany({
-    where: { relatedYearId: yearId },
-  });
-
-  await prisma.financialYear.delete({
-    where: { id: yearId },
-  });
+  await prisma.$transaction([
+    prisma.auditData.delete({ where: { yearId } }),
+    prisma.reviewEvent.deleteMany({ where: { yearId } }),
+    prisma.notification.deleteMany({ where: { relatedYearId: yearId } }),
+    prisma.financialYear.delete({ where: { id: yearId } }),
+  ]);
 
   return { success: true };
 };

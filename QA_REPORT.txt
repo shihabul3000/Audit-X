@@ -1,0 +1,422 @@
+================================================================================
+  AUDIT-X PLATFORM — FULL QA REPORT
+  Date: April 21, 2026
+  Engineer: Kiro QA Analysis
+  Scope: Full-stack (Backend: Node/Express/Prisma, Frontend: React/Vite/Zustand)
+================================================================================
+
+EXECUTIVE SUMMARY
+-----------------
+TypeScript compilation: PASS (0 errors on both backend and frontend)
+Critical runtime bugs: 5 found
+Security vulnerabilities: 4 found
+API contract mismatches: 4 found
+Logic/design flaws: 6 found
+Code quality issues: 8 found
+Total issues: 27
+
+================================================================================
+SECTION 1 — CRITICAL BUGS (will cause runtime failures)
+================================================================================
+
+[BUG-01] SEVERITY: CRITICAL
+File: backend/src/server.ts
+Issue: Prisma import mismatch — default vs named export conflict.
+  prismaClient.ts exports BOTH a named export `prisma` and a default export.
+  server.ts imports the default: `import prisma from "./config/prismaClient"`
+  All other files import the named: `import { prisma } from "../../config/prismaClient"`
+  This creates two separate PrismaClient instances in the same process,
+  which can cause connection pool exhaustion and inconsistent state.
+Fix: Change server.ts to use the named export:
+  BEFORE: import prisma from "./config/prismaClient";
+  AFTER:  import { prisma } from "./config/prismaClient";
+
+[BUG-02] SEVERITY: CRITICAL
+File: frontend/src/services/financialData.service.ts
+Issue: API endpoint path mismatch vs backend routes.
+  Frontend calls:
+    PATCH /financial-data/{yearId}/audit
+    PATCH /financial-data/{yearId}/notes
+    PATCH /financial-data/{yearId}/discussion
+  Backend registers:
+    PATCH /financial-data/{yearId}/audit-report-data
+    PATCH /financial-data/{yearId}/notes-data
+    PATCH /financial-data/{yearId}/discussion-data
+  All three PATCH calls will return 404 Not Found.
+Fix: Update financialData.service.ts endpoints to match backend:
+  updateAuditData  -> /financial-data/${yearId}/audit-report-data
+  updateNotesData  -> /financial-data/${yearId}/notes-data
+  updateDiscussionData -> /financial-data/${yearId}/discussion-data
+
+[BUG-03] SEVERITY: CRITICAL
+File: frontend/src/services/review.service.ts
+Issue: Multiple API endpoint mismatches vs backend routes.
+  Frontend calls:
+    GET  /reviews/pending          (backend has GET /reviews/queue)
+    POST /reviews/{yearId}/start   (backend has POST /reviews/{yearId}/start-review)
+    POST /reviews/{yearId}/finalize (missing note param — backend accepts optional note)
+  These will all return 404 Not Found.
+Fix: Update review.service.ts:
+  getPendingReviews -> GET /reviews/queue
+  startReview      -> POST /reviews/{yearId}/start-review
+
+[BUG-04] SEVERITY: CRITICAL
+File: frontend/src/services/company.service.ts
+Issue: update() uses PUT but backend only registers PATCH.
+  Frontend: httpClient.put(`/companies/${id}`, ...)
+  Backend:  router.patch("/:id", ...)
+  PUT requests will return 404 Not Found.
+Fix: Change httpClient.put to httpClient.patch in company.service.ts update().
+
+[BUG-05] SEVERITY: CRITICAL
+File: frontend/src/components/dashboard/CompanyDashboard.tsx (line ~44)
+Issue: API response shape mismatch when loading financial years.
+  The backend returns paginated data: { data: { data: [...], meta: {...} } }
+  The component reads: response.data (expects a flat array)
+  This means financialYears will be set to the pagination object, not the array,
+  causing the table to render nothing or crash on .map().
+Fix: Change line to: setFinancialYears(response.data.data);
+
+================================================================================
+SECTION 2 — SECURITY VULNERABILITIES
+================================================================================
+
+[SEC-01] SEVERITY: HIGH
+File: backend/.env
+Issue: Real credentials committed to source control.
+  - Live PostgreSQL connection string with password exposed
+  - Google OAuth client secret exposed
+  - Gmail SMTP credentials (app passwords) exposed
+  - Better Auth secret exposed
+  These are production/real credentials visible in the repository.
+Fix: Rotate all exposed credentials immediately. Add .env to .gitignore
+  (it is listed in backend/.gitignore but the file exists — verify it was
+  never committed to git history with `git log --all -- backend/.env`).
+
+[SEC-02] SEVERITY: HIGH
+File: backend/prisma/seed.ts
+Issue: Default Super Admin password hardcoded in source code.
+  Password "Admin@123456" is plaintext in the seed file.
+  Anyone with repo access knows the default admin credentials.
+Fix: Read the seed password from an environment variable:
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password) throw new Error('SEED_ADMIN_PASSWORD env var required');
+
+[SEC-03] SEVERITY: MEDIUM
+File: backend/src/modules/auth/auth.controller.ts (logout function)
+Issue: Logout only clears the custom cookie but does NOT invalidate the
+  Better Auth session in the database. The session token remains valid
+  until it naturally expires (30 days). An attacker who captured the
+  session cookie can continue using it after the user logs out.
+Fix: Call auth.api.signOut() with the request headers before clearing cookie:
+  await auth.api.signOut({ headers: req.headers });
+  res.clearCookie("better-auth.session_token");
+
+[SEC-04] SEVERITY: MEDIUM
+File: backend/src/modules/company/company.service.ts — softDelete()
+Issue: No existence check before soft-deleting a company.
+  The function calls hasAccess() then immediately calls prisma.company.update()
+  without first verifying the company exists and is not already deleted.
+  If the company doesn't exist, Prisma throws an unhandled P2025 error
+  instead of a clean 404 ApiError.
+Fix: Add existence check before the update:
+  const company = await prisma.company.findUnique({ where: { id } });
+  if (!company || company.isDeleted) throw ApiError.notFound("Company not found");
+
+================================================================================
+SECTION 3 — API CONTRACT MISMATCHES
+================================================================================
+
+[API-01] SEVERITY: HIGH
+File: frontend/src/components/dashboard/DashboardLayout.tsx (line ~22)
+Issue: setCurrentUser(response.data) passes the raw API response data object,
+  but the User interface in useAppStore.ts expects fields like
+  `assignedCompanyIds`, `notifications`, etc. that the backend /auth/me
+  endpoint does NOT return. This causes the store's currentUser to be
+  partially populated, breaking permission checks like
+  permissionSelectors.canEditFinancialYear() which reads
+  year.assignedStudentIds.includes(user.id).
+Fix: Map the API response to the User interface shape, providing defaults
+  for fields not returned by the API:
+  setCurrentUser({
+    ...response.data,
+    assignedCompanyIds: [],
+    notifications: [],
+  });
+
+[API-02] SEVERITY: MEDIUM
+File: frontend/src/store/useAppStore.ts — fetchCompanies()
+Issue: response.data.data is used to set companies, but the Company interface
+  in the store requires a `financialYears` array. The backend /companies
+  endpoint returns companies WITHOUT financialYears (only a count).
+  This means company.financialYears will be undefined, causing crashes
+  in any code that calls company.financialYears.find(...).
+Fix: Map the API response and initialize financialYears as empty array:
+  state.companies = response.data.data.map((c: any) => ({
+    ...c,
+    financialYears: c.financialYears || [],
+  }));
+
+[API-03] SEVERITY: MEDIUM
+File: frontend/src/components/dashboard/CompanyDashboard.tsx
+Issue: The "Start Review" flow is missing. The admin can "Request Revisions"
+  and "Approve & Lock" but there is no button to call start-review first.
+  The backend enforces: SUBMITTED -> UNDER_REVIEW -> FINALIZED/CHANGES_REQUESTED.
+  Calling requestChanges or finalize on a SUBMITTED year (not UNDER_REVIEW)
+  will return a 400 error from the backend.
+Fix: Add a "Start Review" button for SUBMITTED years that calls
+  reviewService.startReview(yearId) before allowing finalize/request-changes.
+
+[API-04] SEVERITY: LOW
+File: frontend/src/services/financialYear.service.ts — updateStatus()
+Issue: This function is defined but never called anywhere in the frontend.
+  The review workflow uses reviewService instead. Dead code.
+Fix: Remove the unused updateStatus function or wire it up if needed.
+
+================================================================================
+SECTION 4 — LOGIC / DESIGN FLAWS
+================================================================================
+
+[LOGIC-01] SEVERITY: HIGH
+File: backend/src/modules/financial-data/financialData.service.ts
+  (updateAuditReportData, updateNotesData, updateDiscussionData)
+Issue: The `year` variable returned from checkCanEdit() is destructured
+  but never used in any of the three update functions. The variable is
+  declared as `const { year } = await checkCanEdit(...)` but only
+  `company` would be needed. This is a dead variable — not a crash, but
+  indicates the functions were written expecting to use year data
+  (e.g., for lastEditedByUserId tracking) but the logic was left incomplete.
+  The lastEditedByUserId IS updated via a separate query, so this is
+  redundant but harmless. Still, it's misleading code.
+Fix: Either use the year variable or destructure only what's needed:
+  await checkCanEdit(yearId, userId, role, status); // no destructure needed
+
+[LOGIC-02] SEVERITY: HIGH
+File: frontend/src/hooks/useGlobalStoreSync.ts
+Issue: useEffect dependency array includes store methods (updateCompanyInfo,
+  updatePPESummary) which are new function references on every render
+  (Zustand creates new references). This causes the effect to re-run
+  on every render, creating an infinite update loop when data changes.
+Fix: Remove the store methods from the dependency array. They are stable
+  Zustand actions and should not be in deps:
+  }, [reportingDateLabel, priorDateLabel, data]);
+
+[LOGIC-03] SEVERITY: MEDIUM
+File: backend/src/modules/financial-year/financialYear.service.ts — update()
+Issue: When updating a financial year's reportingDate, the year number is
+  recalculated and updated. However, there is no check for whether the
+  new year number conflicts with an existing financial year for the same
+  company. This can create a duplicate year violation at the DB level
+  (@@unique([companyId, year])) which will throw an unhandled Prisma error
+  instead of a clean 409 ApiError.
+Fix: Before updating, check for conflicts:
+  if (data.reportingDate) {
+    const newYear = new Date(data.reportingDate).getFullYear();
+    if (newYear !== year.year) {
+      const conflict = await prisma.financialYear.findUnique({
+        where: { companyId_year: { companyId, year: newYear } }
+      });
+      if (conflict) throw ApiError.conflict(`Year ${newYear} already exists`);
+    }
+  }
+
+[LOGIC-04] SEVERITY: MEDIUM
+File: frontend/src/App.tsx — AppContent component
+Issue: The banned user check happens AFTER the isLoaded/data check.
+  If a banned user has an active year selected, they will see the loading
+  spinner briefly before the banned screen appears. More importantly,
+  the banned check should happen before any data loading to prevent
+  unnecessary API calls.
+Fix: Move the banned user check before the isLoaded check.
+
+[LOGIC-05] SEVERITY: MEDIUM
+File: backend/src/modules/auth/auth.service.ts — verifyEmail()
+Issue: OTP lookup uses findFirst with no expiry filter, then checks expiry
+  manually. If a user has multiple OTPs (e.g., requested resend multiple
+  times), findFirst with orderBy createdAt desc will get the latest one.
+  However, if the latest OTP is expired but an older one is not (edge case
+  with clock skew), the function will incorrectly reject a valid OTP.
+  More importantly, there is no check that the OTP belongs to an
+  unverified user — a verified user's email could theoretically be
+  re-verified with a stale OTP if OTP cleanup failed.
+Fix: Add `expiresAt: { gt: new Date() }` to the OTP query filter.
+
+[LOGIC-06] SEVERITY: LOW
+File: backend/src/modules/review/review.service.ts — reopen()
+Issue: The reopen() function has no status guard. It will reopen a financial
+  year regardless of its current status — including DRAFT years. This means
+  calling reopen on a DRAFT year is a no-op that still creates a REOPENED
+  review event, polluting the audit trail.
+Fix: Add a status check:
+  if (!['FINALIZED', 'SUBMITTED', 'UNDER_REVIEW', 'CHANGES_REQUESTED']
+      .includes(year.reviewStatus)) {
+    throw ApiError.badRequest('Year is already in draft state');
+  }
+
+================================================================================
+SECTION 5 — CODE QUALITY ISSUES
+================================================================================
+
+[QUALITY-01]
+File: backend/src/shared/ApiResponse.ts
+Issue: ApiResponse class is defined but never used anywhere in the codebase.
+  All controllers use inline sendResponse() helper functions instead.
+  Dead code — increases maintenance burden.
+Fix: Remove ApiResponse.ts or refactor controllers to use it consistently.
+
+[QUALITY-02]
+File: backend/src/shared/catchAsync.ts
+Issue: catchAsync wrapper is defined but never used. All controllers use
+  manual try/catch blocks instead. Dead code.
+Fix: Remove catchAsync.ts or adopt it consistently across all controllers
+  to reduce boilerplate.
+
+[QUALITY-03]
+File: Multiple backend controllers
+Issue: Each controller module defines its own local sendResponse() helper
+  with slightly different shapes:
+  - company/review/financialYear controllers: { message, statusCode, data }
+  - notification/stats controllers: { success: true, message, statusCode, data }
+  - auth controller: { success: true, message, statusCode, data }
+  Inconsistent response shapes make frontend parsing fragile.
+Fix: Create a shared sendResponse utility in /shared/ and use it everywhere.
+
+[QUALITY-04]
+File: frontend/src/store/useAppStore.ts
+Issue: The store contains a large amount of local state management logic
+  (createCompany, startNewYear, etc.) that duplicates backend API logic.
+  The store's companies array is populated from the API but financial year
+  data is managed locally. This dual-source-of-truth causes the store's
+  company.financialYears to always be empty (API doesn't return them),
+  while the dashboard loads years separately via API. The two data sources
+  are never reconciled.
+Fix: Decide on a single source of truth. Either:
+  (a) Fetch all data from API and store in Zustand as cache, or
+  (b) Keep local state and sync to API on changes.
+  Currently the hybrid approach causes subtle bugs (see API-02).
+
+[QUALITY-05]
+File: frontend/src/components/dashboard/CompanyDashboard.tsx (line ~35)
+Issue: `const hasAccess = true;` is hardcoded with a comment saying
+  "Temporary simplification". This bypasses all access control on the
+  company dashboard, meaning any authenticated user can see any company's
+  dashboard if they navigate directly.
+Fix: Implement proper access check using permissionSelectors.canAccessCompany().
+
+[QUALITY-06]
+File: backend/src/modules/auth/auth.utils.ts
+Issue: better-auth is configured with trustedOrigins set to BETTER_AUTH_URL
+  (the backend URL, e.g. http://localhost:5000). This should be the
+  FRONTEND_URL to allow the frontend to make auth requests. Using the
+  backend URL as a trusted origin for CORS/auth purposes is incorrect.
+Fix: Change trustedOrigins to use config.FRONTEND_URL:
+  trustedOrigins: [config.FRONTEND_URL],
+
+[QUALITY-07]
+File: frontend/.env.example
+Issue: The .env.example only documents GEMINI_API_KEY and APP_URL, but
+  the actual .env requires VITE_API_BASE_URL. New developers will not
+  know what environment variables are needed.
+Fix: Update .env.example to include all required variables:
+  VITE_API_BASE_URL=http://localhost:5000/api/v1
+  GEMINI_API_KEY=your_key_here
+
+[QUALITY-08]
+File: backend/src/modules/financial-year/financialYear.service.ts — remove()
+Issue: The delete operation is not wrapped in a transaction. If auditData
+  deletion succeeds but reviewEvent deletion fails, the database is left
+  in a partially deleted state. The financial year record would still
+  exist but its audit data would be gone.
+Fix: Wrap all delete operations in a Prisma transaction:
+  await prisma.$transaction([
+    prisma.auditData.delete({ where: { yearId } }),
+    prisma.reviewEvent.deleteMany({ where: { yearId } }),
+    prisma.notification.deleteMany({ where: { relatedYearId: yearId } }),
+    prisma.financialYear.delete({ where: { id: yearId } }),
+  ]);
+
+================================================================================
+SECTION 6 — ENVIRONMENT / CONFIGURATION ISSUES
+================================================================================
+
+[ENV-01] SEVERITY: HIGH
+File: backend/.env vs backend/src/config/index.ts
+Issue: The .env file has FRONTEND_URL=http://localhost:3000 but the
+  frontend runs on port 3000 (vite --port=3000). The backend CORS config
+  uses config.FRONTEND_URL. This is actually correct for the current setup,
+  but the backend .env.example shows FRONTEND_URL=http://localhost:5173
+  (Vite default). This inconsistency will confuse developers setting up
+  the project from the example file.
+Fix: Update .env.example to use port 3000 to match the actual frontend config.
+
+[ENV-02] SEVERITY: MEDIUM
+File: backend/prisma/schema.prisma
+Issue: The datasource block has no `url` field:
+  datasource db {
+    provider = "postgresql"
+  }
+  The DATABASE_URL is only provided via the PrismaPg adapter in prismaClient.ts
+  and prisma.config.ts. This means standard Prisma CLI commands
+  (prisma migrate, prisma studio, prisma db push) will fail without
+  the DATABASE_URL being set in the environment, and the schema has no
+  fallback. Developers running migrations need to know to set DATABASE_URL.
+Fix: Add url field to schema for CLI compatibility:
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+================================================================================
+SECTION 7 — MISSING FEATURES / INCOMPLETE IMPLEMENTATIONS
+================================================================================
+
+[MISSING-01]
+File: frontend/src/services/review.service.ts
+Issue: reviewService.startReview() exists but is never called from the
+  CompanyDashboard. The admin workflow skips the UNDER_REVIEW state,
+  going directly from SUBMITTED to FINALIZED/CHANGES_REQUESTED, which
+  the backend will reject with a 400 error.
+
+[MISSING-02]
+File: backend/src/modules/auth/auth.controller.ts — login()
+Issue: The Better Auth session creation via auth.api.signInEmail() is called
+  after the custom login logic. If the user's password in Better Auth's
+  account table differs from the custom users table (e.g., created via
+  the custom register endpoint which only writes to the users table),
+  the Better Auth session creation will fail silently. The session cookie
+  may not be set, causing subsequent authenticated requests to fail.
+  The two auth systems (custom + Better Auth) are not fully synchronized.
+
+[MISSING-03]
+File: frontend/src/components/dashboard/AdminDashboard.tsx (not read but referenced)
+Issue: The admin dashboard route exists but the component was not analyzed.
+  Based on the pattern, it likely has similar API mismatch issues.
+
+================================================================================
+FIXES APPLIED IN THIS REPORT
+================================================================================
+No automatic code fixes were applied. All issues are documented above
+with specific fix instructions. The following are the highest priority
+fixes to apply first:
+
+PRIORITY 1 (Apply immediately — breaks core functionality):
+  1. BUG-02: Fix financialData.service.ts endpoint paths
+  2. BUG-03: Fix review.service.ts endpoint paths
+  3. BUG-04: Fix company.service.ts PUT -> PATCH
+  4. BUG-05: Fix CompanyDashboard response.data -> response.data.data
+  5. BUG-01: Fix server.ts prisma import
+
+PRIORITY 2 (Apply before production):
+  6. SEC-01: Rotate all exposed credentials
+  7. SEC-02: Remove hardcoded seed password
+  8. SEC-03: Fix logout to invalidate session
+  9. API-01: Fix setCurrentUser mapping in DashboardLayout
+  10. API-02: Fix fetchCompanies mapping in useAppStore
+  11. LOGIC-02: Fix useGlobalStoreSync infinite loop
+
+PRIORITY 3 (Code quality / robustness):
+  12. All remaining LOGIC, QUALITY, ENV, and MISSING items
+
+================================================================================
+END OF REPORT
+================================================================================

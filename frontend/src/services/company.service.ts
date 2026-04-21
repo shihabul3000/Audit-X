@@ -16,7 +16,7 @@ export const companyService = {
   },
 
   update: async (id: string, name: string, address?: string) => {
-    return httpClient.put(`${API_URL}/${id}`, { name, address });
+    return httpClient.patch(`${API_URL}/${id}`, { name, address });
   },
 
   delete: async (id: string) => {

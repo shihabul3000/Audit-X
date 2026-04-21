@@ -270,7 +270,10 @@ export const useAppStore = create<AppState>()(
           const { companyService } = await import('../services/company.service');
           const response = await companyService.getAll();
           set(state => {
-            state.companies = response.data.data;
+            state.companies = (response.data.data || []).map((c: any) => ({
+              ...c,
+              financialYears: c.financialYears || [],
+            }));
           });
         } catch (error) {
           console.error("Failed to fetch companies:", error);

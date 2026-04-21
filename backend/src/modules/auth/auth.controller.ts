@@ -75,7 +75,7 @@ export const logout = async (
   next: NextFunction
 ) => {
   try {
-    await authService.logout(res);
+    await authService.logout(res, req);
     sendResponse(res, 200, "Logout successful", null);
   } catch (error) {
     next(error);
