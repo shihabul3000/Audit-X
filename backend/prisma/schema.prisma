@@ -1,0 +1,235 @@
+// Prisma schema for Audit-X backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+enum ReviewStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  FINALIZED
+}
+
+enum ReviewEventType {
+  CREATED
+  SUBMITTED
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  FINALIZED
+  REOPENED
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  UNASSIGNMENT
+  REVIEW_SUBMITTED
+  REVIEW_STARTED
+  CHANGES_REQUESTED
+  FINALIZED
+  REOPENED
+  BAN
+  UNBAN
+  SYSTEM
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id                     String   @id @default(cuid())
+  name                   String
+  email                  String   @unique
+  password               String
+  role                   UserRole @default(STUDENT)
+  status                 UserStatus @default(ACTIVE)
+  emailVerified          Boolean  @default(false)
+  needPasswordChange     Boolean  @default(false)
+  profileImage           String?
+  bannedReason           String?
+  bannedByUserId         String?
+  googleId               String?  @unique
+  isDeleted              Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  companies             Company[]               @relation("UserCompanies")
+  assignments           CompanyAssignment[]     @relation("UserAsAssignee")
+  assignedBy            CompanyAssignment[]     @relation("UserAsAssigner")
+  notifications         Notification[]
+  reviewEvents          ReviewEvent[]
+  createdYears          FinancialYear[]         @relation("UserCreatedYears")
+  lastEditedYears       FinancialYear[]         @relation("UserLastEditedYears")
+  reviewingYears        FinancialYear[]         @relation("UserReviewingYears")
+  finalizedYears        FinancialYear[]         @relation("UserFinalizedYears")
+  passwordResetTokens   PasswordResetToken[]
+
+  @@map("users")
+}
+
+model Company {
+  id           String          @id @default(cuid())
+  name         String
+  address      String?
+  createdByUserId String
+  isDeleted    Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Relations
+  createdBy      User              @relation("UserCompanies", fields: [createdByUserId], references: [id])
+  assignments    CompanyAssignment[] @relation("CompanyAssignments")
+  financialYears FinancialYear[]
+
+  @@map("companies")
+}
+
+model CompanyAssignment {
+  id              String   @id @default(cuid())
+  userId          String
+  companyId       String
+  assignedByUserId String
+  assignedAt      DateTime @default(now())
+
+  // Relations
+  user            User     @relation("UserAsAssignee", fields: [userId], references: [id])
+  company         Company  @relation("CompanyAssignments", fields: [companyId], references: [id])
+  assignedBy      User     @relation("UserAsAssigner", fields: [assignedByUserId], references: [id])
+
+  @@unique([userId, companyId])
+  @@map("company_assignments")
+}
+
+model FinancialYear {
+  id                    String         @id @default(cuid())
+  companyId             String
+  year                  Int
+  reportingDate         String
+  reviewStatus          ReviewStatus   @default(DRAFT)
+  isLocked              Boolean        @default(false)
+  createdByUserId       String
+  currentReviewerUserId String?
+  finalizedByUserId     String?
+  finalizedAt           DateTime?
+  submittedAt           DateTime?
+  lastEditedByUserId    String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  // Relations
+  company               Company            @relation(fields: [companyId], references: [id])
+  createdBy             User              @relation("UserCreatedYears", fields: [createdByUserId], references: [id])
+  currentReviewer       User?             @relation("UserReviewingYears", fields: [currentReviewerUserId], references: [id])
+  finalizedBy           User?             @relation("UserFinalizedYears", fields: [finalizedByUserId], references: [id])
+  lastEditedBy          User?             @relation("UserLastEditedYears", fields: [lastEditedByUserId], references: [id])
+  auditData             AuditData?
+  reviewEvents          ReviewEvent[]
+
+  @@unique([companyId, year])
+  @@map("financial_years")
+}
+
+model AuditData {
+  id           String   @id @default(cuid())
+  yearId       String   @unique
+  auditReportData Json?
+  notesData    Json?
+  discussionData Json?
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  financialYear FinancialYear @relation(fields: [yearId], references: [id])
+
+  @@map("audit_data")
+}
+
+model ReviewEvent {
+  id        String         @id @default(cuid())
+  yearId    String
+  type      ReviewEventType
+  actorUserId String
+  actorRole String
+  note      String?
+  createdAt DateTime       @default(now())
+
+  // Relations
+  financialYear FinancialYear @relation(fields: [yearId], references: [id])
+  actor         User          @relation(fields: [actorUserId], references: [id])
+
+  @@map("review_events")
+}
+
+model Notification {
+  id                String          @id @default(cuid())
+  userId            String
+  type              NotificationType
+  title             String
+  message           String
+  read              Boolean         @default(false)
+  relatedCompanyId  String?
+  relatedYearId     String?
+  createdAt         DateTime        @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otps")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("password_reset_tokens")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  userId       String
+  amount       Float
+  transactionId String?
+  status       PaymentStatus @default(PENDING)
+  paymentMethod String?
+  createdAt    DateTime      @default(now())
+
+  @@map("payments")
+}

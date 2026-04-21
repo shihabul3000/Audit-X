@@ -1,0 +1,3569 @@
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                                                                      
+   ███████████████████████████████████████████████████████████████████████████████████████████████   
+   ██                                                                                             ██   
+   ██              🏦  AUDIT-X — FINANCIAL AUDITING PLATFORM  🏦                                ██   
+   ██         "Professional Financial Statement Management for Audit Firms"                      ██   
+   ██                                                                                             ██   
+   ██                    Full-Stack Developer Documentation                                       ██   
+   ██                   AI-Ready Implementation Reference Guide                                  ██   
+   ██                     Version 4.0 (Better Auth)  |  April 2026                               ██   
+   ██                                                                                             ██   
+   ███████████████████████████████████████████████████████████████████████████████████████████████   
+                                                                                                      
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+  📑  TABLE OF CONTENTS
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+  PART A — PROJECT CONTEXT (প্রজেক্ট পরিচিতি)
+  ─────────────────────────────────────────────
+   A1.  Project Overview (কী তৈরি হচ্ছে)
+   A2.  Current Prototype Analysis (বর্তমান অবস্থা — কী আছে)
+   A3.  Upgrade Goals (কী হবে — লক্ষ্য)
+   A4.  What Stays vs What Changes (কী থাকবে, কী বদলাবে — CRITICAL)
+   A5.  Roles & Permission Matrix (রোল ও অনুমতি)
+   A6.  Review Workflow (রিভিউ ফ্লো — Business Logic)
+
+  PART B — TECH STACK & ARCHITECTURE (প্রযুক্তি)
+  ─────────────────────────────────────────────────
+   B1.  Frontend Tech Stack (Existing + New Dependencies)
+   B2.  Backend Tech Stack (নতুন — Express + PostgreSQL)
+   B3.  Environment Variables (.env Configuration)
+   B4.  Architecture Pattern (Data Flow)
+
+  PART C — PROJECT STRUCTURE (ফোল্ডার স্ট্রাকচার)
+  ──────────────────────────────────────────────────
+   C1.  Frontend Folder Structure (বর্তমান + নতুন)
+   C2.  Backend Folder Structure (সম্পূর্ণ নতুন)
+
+  PART D — DATABASE DESIGN (ডাটাবেজ)
+  ──────────────────────────────────────
+   D1.  All Database Models with Every Field
+   D2.  Enums
+   D3.  Relationships Map
+   D4.  Prisma Schema (Complete — Ready to Use)
+
+  PART E — API REFERENCE (সম্পূর্ণ API ডকুমেন্টেশন)
+  ────────────────────────────────────────────────────
+   E1.  Standard API Response Format
+   E2.  Auth APIs (12 endpoints)
+   E3.  User APIs (10 endpoints)
+   E4.  Company APIs (7 endpoints)
+   E5.  Financial Year APIs (6 endpoints)
+   E6.  Financial Data APIs (4 endpoints)
+   E7.  Review APIs (7 endpoints)
+   E8.  Notification APIs (4 endpoints)
+   E9.  Stats APIs (2 endpoints)
+   E10. Payment APIs (Future — Skeleton)
+
+  PART F — FRONTEND UPGRADE DETAILS
+  ────────────────────────────────────
+   F1.  httpClient.ts — Axios Service Layer
+   F2.  Auth Flow (Better Auth Session Based)
+   F3.  Service Files (সব service এর function list)
+   F4.  Zustand Store Migration Strategy
+   F5.  Auto-Save Pattern (Debounced API Sync)
+   F6. FRONTEND VALIDATION & AUTH UX STRATEGY 
+
+  PART G — BACKEND IMPLEMENTATION GUIDE
+  ────────────────────────────────────────
+   G1.  Middleware Details
+   G2.  Better Auth Implementation
+   G3.  Email Service Setup
+   G4.  File Upload Setup
+   G5.  Error Handling Pattern
+
+  PART H — COMMIT PLAN (গিট কমিট — 40+ কমিট)
+  ───────────────────────────────────────────────
+   H1.  Backend Commits (20 commits)
+   H2.  Frontend Commits (20 commits)
+   H3.  Bonus Commits (5+)
+
+  PART I — STEP-BY-STEP BUILD GUIDE (AI Prompt Ready)
+  ──────────────────────────────────────────────────────
+   Phase 1:  Backend Project Init
+   Phase 2:  Database Schema
+   Phase 3:  Auth Module
+   Phase 4:  Core Backend Modules
+   Phase 5:  Frontend API Layer
+   Phase 6:  Auth Upgrade
+   Phase 7:  Data Migration
+   Phase 8:  Admin Features
+   Phase 9:  Polish & Production
+
+  PART J — TESTING GUIDE
+  ───────────────────────
+   J1.  Backend API Testing (Manual — Postman/Thunder)
+   J2.  Frontend Integration Testing
+   J3.  Test Checklist
+
+  PART K — DEPLOYMENT GUIDE
+  ───────────────────────────
+   K1.  Local Development Setup
+   K2.  Production Checklist
+
+  PART L — PAYMENT GATEWAY (FUTURE — শেষে করবে)
+  ─────────────────────────────────────────────────
+   L1.  Payment Plan
+   L2.  Gateway Options
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART A — PROJECT CONTEXT (প্রজেক্ট পরিচিতি)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A1. PROJECT OVERVIEW (কী তৈরি হচ্ছে)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  AUDIT-X হলো একটি Professional Financial Auditing Platform।
+
+  এই প্ল্যাটফর্মে একটি Audit firm-এর:
+  → Student/Audit Staff (যারা financial statements তৈরি করে)
+  → Manager/Admin (যারা review করে, approve করে)
+  → Partner/Super Admin (যারা পুরো সিস্টেম manage করে)
+
+  এই তিনটি role নিয়ে কাজ করা হয়।
+
+  কী ধরনের কাজ হয়:
+  ──────────────────
+  1. Audit firm একটি client company-র financial statements তৈরি করে
+  2. Company create করো, Financial Year create করো
+  3. Financial Statements fill করো:
+     → Cover Page (Report cover)
+     → SFP (Statement of Financial Position — Balance Sheet)
+     → PNL (Profit & Loss Statement)
+     → SCE (Statement of Changes in Equity)
+     → SCF (Statement of Cash Flows)
+     → PPE Schedule (Property, Plant & Equipment — Annexure A)
+     → N4-13 (Notes 4 থেকে 30 পর্যন্ত)
+     → P_Discussion (First Discussion Meeting Paper — 13 pages)
+  4. সব ঠিক হলে Submit করো review-এর জন্য
+  5. Manager review করে, changes চাইলে student আবার edit করে
+  6. Final হলে Finalize করে Lock করা হয়
+  7. এই সব প্রক্রিয়ায় Notifications যায় relevant users-এ
+
+  বর্তমান prototype এই সব কাজ করতে পারে — কিন্তু শুধু localStorage-এ।
+  আমাদের কাজ হলো এটাকে real backend + database দিয়ে production-ready করা।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A2. CURRENT PROTOTYPE ANALYSIS (বর্তমান অবস্থা — কী আছে)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── বর্তমান Tech Stack ──
+
+  React 19 + TypeScript + Vite 6
+  TailwindCSS 4 (@tailwindcss/vite plugin)
+  Zustand 5 + immer (State management + localStorage persist)
+  React Router DOM v7
+  Lucide React (Icons)
+  Motion / Framer Motion (Animations)
+  UUID (ID generation)
+
+  ── বর্তমান File Count ──
+
+  • store/useAppStore.ts          → 755 lines — Central Zustand store (সব কিছু এখানে)
+  • components/tabs/N4_13/       → 36+ Note files + store + sections + recalculate
+  • components/tabs/PPE/         → 5 files (AssetTable, Breakdown, Controls, ReportHeader, Shared)
+  • components/tabs/P_Discussion/ → 13 Page files + Shared
+  • components/landing/          → 6 files (Navbar, Hero, Features, HowItWorks, CTA, Footer)
+  • components/dashboard/        → DashboardLayout, Sidebar, CompanyDashboard
+  • hooks/                       → useAuditData.ts, useGlobalStoreSync.ts
+  • types.ts                     → Tab, AssetRow, PPEData, AuditReportData
+  • utils/dateFormatter.ts       → 3 date utility functions
+
+  ── বর্তমান Routes ──
+
+  /                → LandingPage
+  /auth            → AuthPage (login/register — NO password, email only)
+  /dashboard       → DashboardLayout (Sidebar + CompanyDashboard)
+  /fs/cover        → Cover tab
+  /fs/sfp          → SFP tab
+  /fs/pnl          → PNL tab
+  /fs/sce          → SCE tab
+  /fs/scf          → SCF tab
+  /fs/p_discussion → P_Discussion tab
+  /fs/n4-13        → N4_13 tab
+  /fs/ppe          → PPE tab
+
+  ── বর্তমান Data Structure in localStorage ──
+
+  useAppStore persists:
+  {
+    users: User[],          // সব registered users
+    currentUserId: string,  // logged in user
+    activeCompanyId: string,
+    activeYearId: string
+  }
+
+  User {
+    id, name, email, profileImg,
+    companies: Company[]
+  }
+
+  Company {
+    id, name,
+    financialYears: FinancialYear[]
+  }
+
+  FinancialYear {
+    id, year, reportingDate,
+    status: "in-progress" | "completed",
+    data: {
+      auditData: AuditReportData,   // Cover/SFP/PNL/SCE/SCF/PPE data
+      notesData: N4_13_State        // Notes 4-30 data
+    }
+  }
+
+  ── বর্তমান Working Features ──
+
+  ✅ Landing page (6 components)
+  ✅ Login / Register (email only — no password)
+  ✅ Company CRUD (create, update, rename, delete)
+  ✅ Financial Year CRUD + Rollover (carry-forward logic)
+  ✅ Cover page (company name, address, dates)
+  ✅ SFP — auto-calculated from Notes data
+  ✅ PNL — auto-calculated from Notes data
+  ✅ SCE — auto-calculated from Notes data
+  ✅ SCF — auto-calculated (uses previous year data)
+  ✅ PPE Schedule — full asset table with auto-depreciation
+  ✅ N4-13 Notes — 36 note files with full calculation engine (recalculate.ts)
+  ✅ P_Discussion — 13 pages audit working paper
+  ✅ RBAC (student, admin, super_admin roles — all in Zustand)
+  ✅ Review workflow (DRAFT→SUBMITTED→UNDER_REVIEW→CHANGES_REQUESTED→FINALIZED)
+  ✅ Notifications (in-memory)
+
+  ── বর্তমানে কী নেই ──
+
+  ❌ Backend / Server
+  ❌ Database
+  ❌ Real password + password hashing
+  ❌ Session authentication
+  ❌ Real API calls
+  ❌ Email verification / OTP
+  ❌ Google OAuth
+  ❌ Server-side validation
+  ❌ File upload
+  ❌ Payment system
+  ❌ Admin & SuperAdmin separate dashboards (coded but data is mock)
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A3. UPGRADE GOALS (কী হবে — লক্ষ্য)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  GOAL 1: Backend তৈরি করা
+  → Express.js + TypeScript
+  → PostgreSQL database
+  → Prisma ORM
+  → Better Auth (session-based authentication — replaces manual JWT)
+  → Session cookies (managed automatically by Better Auth)
+  → Admin plugin with custom RBAC (STUDENT, ADMIN, SUPER_ADMIN)
+  → Email OTP plugin (email verification + password reset)
+  → All business logic on server
+
+  GOAL 2: Frontend upgrade করা
+  → Password field যোগ করা AuthPage.tsx-এ
+  → localStorage থেকে API call-এ migrate করা
+  → Better Auth React client (`createAuthClient`) ব্যবহার করা
+  → Axios HTTP client তৈরি করা (non-auth API calls এর জন্য)
+  → Service layer (company, year, data, review, notification)
+  → ForgotPassword, ResetPassword, VerifyEmail pages যোগ করা
+  → Notification bell with unread count
+  → Profile page
+
+  GOAL 3: Financial Statement data sync
+  → N4-13, PPE, Discussion data → API তে save হবে
+  → Debounced auto-save (2 second delay after change)
+  → Loading indicator while saving
+  → Rollover API endpoint
+
+  IMPORTANT: Financial Statement UI (tabs) বদলাবে না।
+  শুধু data source বদলাবে (localStorage → API)।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A4. WHAT STAYS vs WHAT CHANGES ⚠️ CRITICAL — AI MUST READ THIS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ════════════════════════════════════════════════════════════
+  ✅ TOUCH করবে না — একদম সেইম রাখবে
+  ════════════════════════════════════════════════════════════
+
+  FILE/FOLDER                           REASON
+  ─────────────────────────────────────────────────────────────────────
+  src/components/landing/               → সব 6 landing files — unchanged
+  src/components/tabs/Cover.tsx         → unchanged
+  src/components/tabs/SFP.tsx           → unchanged (reads from store)
+  src/components/tabs/PNL.tsx           → unchanged (reads from store)
+  src/components/tabs/SCE.tsx           → unchanged (reads from store)
+  src/components/tabs/SCF.tsx           → unchanged (reads from store)
+  src/components/tabs/PPE.tsx           → unchanged (PPEProvider pattern)
+  src/components/tabs/PPE/        │ Unban Student                               │ ❌      │ ✅     │ ✅          │
+  │ View all Admins                             │ ❌      │ ❌     │ ✅          │
+  │ Create Admin user                           │ ❌      │ ❌     │ ✅          │
+  │ Change User Role                            │ ❌      │ ❌     │ ✅          │
+  │ Delete User (soft)                          │ ❌      │ ❌     │ ✅          │
+  │ View Admin Dashboard (stats)                │ ❌      │ ✅     │ ✅          │
+  │ View System Dashboard                       │ ❌      │ ❌     │ ✅          │
+  └─────────────────────────────────────────────┴─────────┴────────┴─────────────┘
+
+  NOTES:
+  • Banned student → can login but cannot access any company/FS data
+  • Deleted user → cannot login at all
+  • Locked FS (FINALIZED) → no one can edit until Reopen করা হয়
+  • Company access: students শুধু assigned companies দেখতে পারে
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A6. REVIEW WORKFLOW (রিভিউ ফ্লো — Business Logic)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  FinancialYear এর reviewStatus Flow:
+
+  DRAFT ──────────────────────── [Student: Submit] ──→ SUBMITTED
+    ↑                                                       ↓
+    │                                              [Admin: Start Review]
+    │                                                       ↓
+    │                                               UNDER_REVIEW
+    │                                              ↙           ↘
+    │                              [Admin: Request Changes] [Admin: Finalize]
+    │                                     ↓                       ↓
+    │                           CHANGES_REQUESTED              FINALIZED
+    └──── [Student re-edits → re-submits] ←┘               (isLocked = true)
+                                                                   ↓
+                                                           [Admin: Reopen]
+                                                                   ↓
+                                                              DRAFT again
+                                                           (isLocked = false)
+
+  State Details:
+  ─────────────
+  DRAFT           → student এবং admin edit করতে পারে। isLocked = false
+  SUBMITTED       → student আর edit করতে পারে না (locked for editing by student)
+  UNDER_REVIEW    → admin reviewing. No edits allowed
+  CHANGES_REQUESTED → student আবার edit করতে পারে এবং re-submit করতে পারে
+  FINALIZED       → সব locked. isLocked = true. শুধু admin Reopen করতে পারে
+
+  Notification Triggers:  ─────────
+  src/services/httpClient.ts            → Axios instance + interceptors
+  src/services/auth.service.ts          → login, register, logout, me
+  src/services/company.service.ts       → company CRUD
+  src/services/financialYear.service.ts → year CRUD + rollover
+  src/services/financialData.service.ts → audit/notes/discussion data
+  src/services/review.service.ts        → submit, review, finalize
+  src/services/notification.service.ts  → notifications
+  src/services/user.service.ts          → user management
+  src/components/auth/
+     ForgotPassword.tsx                 → forgot password form
+     ResetPassword.tsx                  → reset password form
+     VerifyEmail.tsx                    → OTP verification
+  src/components/dashboard/
+     ProfilePage.tsx                    → view/edit profile + image upload
+     AdminDashboard.tsx                 → 🆕 admin panel
+     SuperAdminDashboard.tsx            → 🆕 SA panel
+
+  ════════════════════════════════════════════════════════════
+  🆕 নতুন তৈরি হবে — Backend (সম্পূর্ণ নতুন ফোল্ডার)
+  ════════════════════════════════════════════════════════════
+
+  backend/  → সম্পূর্ণ নতুন Express + TypeScript project
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+A5. ROLES & PERMISSION MATRIX (রোল ও অনুমতি)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3টি Role:
+
+  ┌────────────────┬─────────────────────┬─────────────────────────────────────────────────┐
+  │ Role (DB)      │ Business Title      │ মূল ক্ষমতা                                      │
+  ├────────────────┼─────────────────────┼─────────────────────────────────────────────────┤
+  │ STUDENT        │ Audit Staff/Junior  │ FS তৈরি, edit, submit for review                │
+  │ ADMIN          │ Manager/Senior      │ Review, finalize, student assign/ban             │
+  │ SUPER_ADMIN    │ Partner/Director    │ সবকিছু + admin manage + system config           │
+  └────────────────┴─────────────────────┴─────────────────────────────────────────────────┘
+
+  Permission Matrix:
+
+  ┌─────────────────────────────────────────────┬─────────┬────────┬─────────────┐
+  │ Action                                      │ STUDENT │ ADMIN  │ SUPER_ADMIN │
+  ├─────────────────────────────────────────────┼─────────┼────────┼─────────────┤
+  │ Register                                    │ ✅ (self) │ ❌    │ ❌          │
+  │ Login                                       │ ✅      │ ✅     │ ✅          │
+  │ View own profile                            │ ✅      │ ✅     │ ✅          │
+  │ Edit own profile                            │ ✅      │ ✅     │ ✅          │
+  │ Change own password                         │ ✅      │ ✅     │ ✅          │
+  │ Create Company                              │ ✅      │ ✅     │ ✅          │
+  │ View assigned companies                     │ ✅ own  │ ✅ all │ ✅ all      │
+  │ Edit Company info                           │ ✅ own  │ ✅     │ ✅          │
+  │ Delete Company                              │ ✅ own  │ ✅     │ ✅          │
+  │ Create Financial Year                       │ ✅      │ ✅     │ ✅          │
+  │ Edit Financial Statements (unlocked only)   │ ✅      │ ✅     │ ✅          │
+  │ Submit FS for Review                        │ ✅      │ ❌     │ ❌          │
+  │ Start Review (Under Review)                 │ ❌      │ ✅     │ ✅          │
+  │ Request Changes                             │ ❌      │ ✅     │ ✅          │
+  │ Finalize (Lock FS)                          │ ❌      │ ✅     │ ✅          │
+  │ Reopen (Unlock FS)                          │ ❌      │ ✅     │ ✅          │
+  │ Assign Student to Company                   │ ❌      │ ✅     │ ✅          │
+  │ Unassign Student from Company               │ ❌      │ ✅     │ ✅          │
+  │ View all Students                           │ ❌      │ ✅     │ ✅          │
+  │ Ban Student                                 │ ❌      │ ✅     │ ✅          │
+  │ Unban Student                               │ ❌      │ ✅     │ ✅          │
+  │ View all Admins                             │ ❌      ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  # Server Configuration                                                     │
+  │  PORT=5000                                                                  │
+  │  NODE_ENV=development                                                       │
+  │  FRONTEND_URL=http://localhost:5173                                         │
+  │                                                                             │
+  │  # Database                                                                 │
+  │  DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/audit_x_db          │
+  │                                                                             │
+  │  # Better Auth                                                              │
+  │  BETTER_AUTH_SECRET=<PLACEHOLDER_GENERATE_32_BYTE_HEX>                      │
+  │  BETTER_AUTH_URL=http://localhost:5000                                       │
+  │                                                                             │
+  │  # Google OAuth (যখন implement করবে তখন যোগ করবে)                         │
+  │  GOOGLE_CLIENT_ID=<PLACEHOLDER_GOOGLE_CLIENT_ID>                            │
+  │  GOOGLE_CLIENT_SECRET=<PLACEHOLDER_GOOGLE_CLIENT_SECRET>                   │
+  │                                                                             │
+  │  # Email / SMTP                                                             │
+  │  SMTP_HOST=<PLACEHOLDER_SMTP_HOST>                                          │
+  │  SMTP_PORT=587                                                              │
+  │  SMTP_USER=<PLACEHOLDER_SMTP_EMAIL>                                         │
+  │  SMTP_PASS=<PLACEHOLDER_SMTP_PASSWORD>                                      │
+  │  EMAIL_FROM="Audit-X <noreply@audit-x.com>"                                │
+  │                                                                             │
+  │  # File Upload                                                              │
+  │  UPLOAD_DIR=./uploads                                                       │
+  │  MAX_FILE_SIZE=5242880                                                      │
+  │                                                                             │
+  │  # Payment Gateway (FUTURE — এখন implement করবে না)                        │
+  │  PAYMENT_GATEWAY_KEY=<PLACEHOLDER_PAYMENT_KEY>                              │
+  │  PAYMENT_GATEWAY_SECRET=<PLACEHOLDER_PAYMENT_SECRET>                       │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  Better Auth Secret generate করার command:
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+  ⚠️ .env ফাইল কখনো Git-এ push করবে না। .gitignore-এ add করবে।
+  ⚠️ .env.example ফাইল তৈরি করবে (values ছাড়া, শুধু keys)।
+  │ View all Admins                             │ ❌      │ ❌     │ ✅          │
+  └─────────────────────────────────────────────┴─────────┴────────┴─────────────┘
+
+  FINALIZED       → সব locked. isLocked = true. শুধু admin Reopen করতে পারে
+
+  Notification Triggers:
+  ──────────────────────
+  • Student submits       → Notify all ADMIN + SUPER_ADMIN
+  • Admin starts review   → Notify the student(s) assigned to that company
+  • Admin requests changes → Notify the student(s) assigned to that company
+  • Admin finalizes       → Notify all students assigned to that company
+  • Student is banned     → Notify the student themselves
+  • Student is assigned   → Notify the student themselves
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART B — TECH STACK & ARCHITECTURE
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+B1. FRONTEND TECH STACK
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── বর্তমানে আছে (EXISTING — DO NOT REMOVE) ──
+
+  ┌─────────────────────┬────────────┬──────────────────────────────────────────────┐
+  │ Package             │ Version    │ Purpose                                      │
+  ├─────────────────────┼────────────┼──────────────────────────────────────────────┤
+  │ react               │ 19.x       │ UI Library                                   │
+  │ vite                │ 6.x        │ Build Tool + Dev Server                      │
+  │ typescript          │ 5.x        │ Type Safety                                  │
+  │ tailwindcss         │ 4.x        │ CSS Framework                                │
+  │ @tailwindcss/vite   │ 4.x        │ Vite Plugin for Tailwind                    │
+  │ zustand             │ 5.x        │ State Management                             │
+  │ zustand/middleware  │ 5.x        │ immer + persist                              │
+  │ react-router-dom    │ 7.x        │ Client-side Routing                          │
+  │ lucide-react        │ 0.5x       │ Icons                                        │
+  │ motion              │ 12.x       │ Animations (Framer Motion)                   │
+  │ uuid                │ 11.x       │ UUID Generation                              │
+  └─────────────────────┴────────────┴──────────────────────────────────────────────┘
+
+  ── নতুন যোগ হবে (NEW INSTALLS) ──
+
+  ┌─────────────────────┬────────────┬──────────────────────────────────────────────┐
+  │ Package             │ Version    │ Purpose                                      │
+  ├─────────────────────┼────────────┼──────────────────────────────────────────────┤
+  │ better-auth         │ 1.x        │ Auth client (signIn, signUp, session hooks)   │
+  │ axios               │ 1.x        │ HTTP Client for non-auth API calls            │
+  │ react-hot-toast     │ 2.x        │ Toast Notifications                          │
+  └─────────────────────┴────────────┴──────────────────────────────────────────────┘
+
+  Install command:
+  npm install better-auth axios react-hot-toast
+
+  ⚠️ IMPORTANT: js-cookie এবং @types/js-cookie লাগবে না (Better Auth session cookies নিজে manage করে)
+  ⚠️ IMPORTANT: TanStack Query/Form/Table ব্যবহার করা হবে না।
+  ⚠️ Zustand-ই থাকবে state management-এ।
+  ⚠️ Shadcn UI ব্যবহার করা হবে না — TailwindCSS দিয়ে বানানো UI intact থাকবে।
+  ⚠️ Framework (Next.js) migration করা হবে না। React + Vite-ই থাকবে।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+B2. BACKEND TECH STACK (সম্পূর্ণ নতুন)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌──────────────────────┬────────────┬────────────────────────────────────────────┐
+  │ Package              │ Version    │ Purpose                                    │
+  ├──────────────────────┼────────────┼────────────────────────────────────────────┤
+  │ node.js              │ 20.x LTS   │ Runtime Environment                        │
+  │ typescript           │ 5.x        │ Type Safety                                │
+  │ express              │ 4.x        │ REST API Framework                         │
+  │ prisma               │ 6.x        │ ORM + Database Migration tool              │
+  │ @prisma/client       │ 6.x        │ Type-safe Database Client                  │
+  │ postgresql           │ 16.x       │ Relational Database                        │
+  │ better-auth          │ 1.x        │ Authentication framework & Session Mgmt.   │
+  │ zod                  │ 3.x        │ Schema Validation (request body)           │
+  │ cors                 │ 2.x        │ Cross-Origin Resource Sharing              │
+  │ @types/cors          │ 2.x        │ TypeScript types                           │
+  │ dotenv               │ 16.x       │ Load .env file                             │
+  │ nodemailer           │ 6.x        │ Email sending (SMTP)                       │
+  │ @types/nodemailer    │ 6.x        │ TypeScript types                           │
+  │ multer               │ 1.x        │ File upload (multipart/form-data)          │
+  │ @types/multer        │ 1.x        │ TypeScript types                           │
+  │ helmet               │ 8.x        │ Security headers                           │
+  │ tsx                  │ 4.x        │ TypeScript runner (for dev)                │
+  │ @types/express       │ 4.x        │ TypeScript types                           │
+  └──────────────────────┴────────────┴────────────────────────────────────────────┘
+
+  Production dependencies install:
+  npm install express prisma @prisma/client better-auth zod cors
+  npm install dotenv nodemailer multer helmet
+
+  Dev dependencies install:
+  npm install -D typescript tsx @types/express @types/cors
+  npm install -D @types/nodemailer @types/multer
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+B3. ENVIRONMENT VARIABLES (.env Configuration)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── Frontend (frontend/.env) ──
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  VITE_API_BASE_URL=http://localhost:5000/api/v1                             │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  ⚠️ Vite-এ VITE_ prefix ছাড়া client-side-এ variable accessible হয় না।
+  ⚠️ Access করতে: import.meta.env.VITE_API_BASE_URL
+
+  ── Backend (backend/.env) ──
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  # Server Configuration                                                     │
+  │  PORT=5000                                                                  │
+  │  NODE_ENV=development                                                       │
+  │  FRONTEND_URL=http://localhost:5173                                         │
+  │                                                                             │
+  │  # Database                                                                 │
+  │  DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/audit_x_db          │
+  │                                                                             │
+  │  # Better Auth Secrets                                                              │
+  │  BETTER_AUTH_SECRET=<PLACEHOLDER_GENERATE_32_BYTE_HEX>                     │
+  │  BETTER_AUTH_URL=http://localhost:5000                                      │
+  │                                                                             │
+  │  # Google OAuth (যখন implement করবে তখন যোগ করবে)                         │
+  │  GOOGLE_CLIENT_ID=<PLACEHOLDER_GOOGLE_CLIENT_ID>                            │
+  │  GOOGLE_CLIENT_SECRET=<PLACEHOLDER_GOOGLE_CLIENT_SECRET>                   │
+  │  GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback      │
+  │                                                                             │
+  │  # Email / SMTP                                                             │
+  │  SMTP_HOST=<PLACEHOLDER_SMTP_HOST>                                          │
+  │  SMTP_PORT=587                                                              │
+  │  SMTP_USER=<PLACEHOLDER_SMTP_EMAIL>                                         │
+  │  SMTP_PASS=<PLACEHOLDER_SMTP_PASSWORD>                                      │
+  │  EMAIL_FROM="Audit-X <noreply@audit-x.com>"                                │
+  │                                                                             │
+  │  # OTP                                                                      │
+  │  OTP_EXPIRES_MINUTES=10                                                     │
+  │                                                                             │
+  │  # File Upload                                                              │
+  │  UPLOAD_DIR=./uploads                                                       │
+  │  MAX_FILE_SIZE=5242880                                                      │
+  │                                                                             │
+  │  # Payment Gateway (FUTURE — এখন implement করবে না)                        │
+  │  PAYMENT_GATEWAY_KEY=<PLACEHOLDER_PAYMENT_KEY>                              │
+  │  PAYMENT_GATEWAY_SECRET=<PLACEHOLDER_PAYMENT_SECRET>                       │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  Better Auth Secret generate করার command:
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+  ⚠️ .env ফাইল কখনো Git-এ push করবে না। .gitignore-এ add করবে।
+  ⚠️ .env.example ফাইল তৈরি করবে (values ছাড়া, শুধু keys)।
+
+  Variable Summary Table:
+
+  ┌───────────────────────────┬──────────┬────────────────────────────────────────────┐
+  │ Variable                  │ Required │ Description                                │
+  ├───────────────────────────┼──────────┼────────────────────────────────────────────┤
+  │ PORT                      │ ✅       │ Express server port                        │
+  │ NODE_ENV                  │ ✅       │ development / production                   │
+  │ FRONTEND_URL              │ ✅       │ CORS origin                                │
+  │ DATABASE_URL              │ ✅       │ PostgreSQL connection string               │
+  │ BETTER_AUTH_SECRET        │ ✅       │ Better Auth signing secret                 │
+  │ BETTER_AUTH_URL           │ ✅       │ Better Auth base backend URL               │
+  │ GOOGLE_CLIENT_ID          │ Optional │ Google OAuth (ভবিষ্যতে)                   │
+  │ GOOGLE_CLIENT_SECRET      │ Optional │ Google OAuth (ভবিষ্যতে)                   │
+  │ SMTP_HOST                 │ Optional │ Email sending                              │
+  │ SMTP_PORT                 │ Optional │ Usually 587 (TLS)                          │
+  │ SMTP_USER                 │ Optional │ Email address                              │
+  │ SMTP_PASS                 │ Optional │ App password                               │
+  │ EMAIL_FROM                │ Optional │ Sender name + email                        │
+  │ OTP_EXPIRES_MINUTES       │ ✅       │ OTP validity                               │
+  │ UPLOAD_DIR                │ ✅       │ Where to save uploaded files               │
+  │ MAX_FILE_SIZE             │ ✅       │ 5MB = 5242880 bytes                        │
+  │ PAYMENT_GATEWAY_KEY       │ Future   │ Not needed now                             │
+  │ PAYMENT_GATEWAY_SECRET    │ Future   │ Not needed now                             │
+  └───────────────────────────┴──────────┴────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+B4. ARCHITECTURE PATTERN (Data Flow)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Request Flow:
+  ─────────────
+  Browser (React) → Better Auth Client (auth APIs) → Express Server → Better Auth Handler
+  Browser (React) → httpClient.ts (Axios) → Express Server → Prisma → PostgreSQL
+
+  Auth Flow (Session-Based via Better Auth):
+  ──────────────────────────────────────────
+  Login → Better Auth creates session in DB → Sets `better-auth.session_token` cookie
+  All requests → Browser sends session cookie automatically
+  Session expired → Better Auth returns 401 → Frontend redirects to /auth
+  ⚠️ NO refresh token flow — Better Auth handles session renewal automatically
+  ⚠️ NO manual JWT verification — `auth.api.getSession()` does everything
+
+  Financial Data Flow:
+  ─────────────────────
+  User edits note → Zustand store updates (instant UI) → 2s debounce
+  → financialDataService.updateNotesData() → API PATCH → Database saves
+
+  Server-Side Pattern:
+  ─────────────────────
+  Auth routes: /api/auth/* → Better Auth handler (toNodeHandler)
+  App routes:  Route → Auth Middleware (auth.api.getSession) → Role Middleware (check role)
+  → Validation Middleware (Zod schema) → Controller → Service → Prisma → Response
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART C — PROJECT STRUCTURE (ফোল্ডার স্ট্রাকচার)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+C1. FRONTEND FOLDER STRUCTURE
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  frontend/
+  ├── .env                                # VITE_API_BASE_URL
+  ├── .env.example                        # Template (no values)
+  ├── .gitignore
+  ├── index.html
+  ├── package.json
+  ├── tsconfig.json
+  ├── vite.config.ts
+  │
+  └── src/
+      ├── main.tsx                        # App entry point
+      ├── App.tsx                         # 🔄 UPDATE: auth guard check
+      ├── types.ts                        # ✅ UNCHANGED
+      │
+      ├── store/
+      │   └── useAppStore.ts              # 🔄 UPDATE: auth → API, keep FS data
+      │
+      ├── hooks/
+      │   ├── useAuditData.ts             # 🔄 UPDATE: API-backed
+      │   └── useGlobalStoreSync.ts       # ✅ UNCHANGED
+      │
+      ├── utils/
+      │   └── dateFormatter.ts            # ✅ UNCHANGED
+      │
+      ├── services/                       # 🆕 NEW FOLDER
+      │   ├── httpClient.ts               # Axios instance + interceptors
+      │   ├── auth.service.ts             # Login, Register, Logout, Me
+      │   ├── user.service.ts             # User CRUD (admin)
+      │   ├── company.service.ts          # Company CRUD
+      │   ├── financialYear.service.ts    # Year CRUD + Rollover
+      │   ├── financialData.service.ts    # FS data (audit + notes + discussion)
+      │   ├── review.service.ts           # Submit, Review, Finalize
+      │   └── notification.service.ts     # Notifications
+      │
+      └── components/
+          ├── Navigation.tsx              # ✅ UNCHANGED
+          │
+          ├── auth/
+          │   ├── AuthPage.tsx            # 🔄 UPDATE: add password, API call
+          │   ├── ForgotPassword.tsx      # 🆕 NEW
+          │   ├── ResetPassword.tsx       # 🆕 NEW
+          │   └── VerifyEmail.tsx         # 🆕 NEW
+          │
+          ├── landing/                    # ✅ ALL UNCHANGED
+          │   ├── LandingPage.tsx
+          │   ├── Navbar.tsx
+          │   ├── HeroSection.tsx
+          │   ├── FeaturesSection.tsx
+          │   ├── HowItWorksSection.tsx
+          │   ├── CTASection.tsx
+          │   └── Footer.tsx
+          │
+          ├── dashboard/
+          │   ├── DashboardLayout.tsx     # 🔄 UPDATE: API auth guard
+          │   ├── Sidebar.tsx             # 🔄 UPDATE: notification badge
+          │   ├── CompanyDashboard.tsx    # 🔄 UPDATE: API-backed CRUD
+          │   ├── AdminDashboard.tsx      # 🆕 NEW (was stub before)
+          │   ├── SuperAdminDashboard.tsx # 🆕 NEW (was stub before)
+          │   └── ProfilePage.tsx         # 🆕 NEW
+          │
+          └── tabs/                       # ✅ ALL UNCHANGED
+              ├── Cover.tsx
+              ├── SFP.tsx
+              ├── PNL.tsx
+              ├── SCE.tsx
+              ├── SCF.tsx
+              ├── PPE.tsx
+              ├── N4_13.tsx
+              ├── P_Discussion.tsx
+              ├── PlaceholderTab.tsx
+              ├── PPE/                    # ✅ All 5 files unchanged
+              ├── N4_13/                  # ✅ All files unchanged
+              └── P_Discussion/           # ✅ All files unchanged
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+C2. BACKEND FOLDER STRUCTURE (সম্পূর্ণ নতুন)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  backend/
+  ├── .env                              # All environment variables
+  ├── .env.example                      # Template
+  ├── .gitignore                        # node_modules, .env, dist, uploads
+  ├── package.json
+  ├── tsconfig.json
+  │
+  ├── uploads/                          # File uploads (gitignored)
+  │   └── profiles/                     # Profile images
+  │
+  └── src/
+      ├── server.ts                     # Entry: app.listen(PORT)
+      ├── app.ts                        # Express setup: middleware + routes
+      │
+      ├── config/
+      │   └── index.ts                  # Export all env vars with validation
+      │
+      ├── prisma/
+      │   ├── schema.prisma             # Full database schema
+      │   ├── migrations/               # Auto-generated by prisma migrate
+      │   └── seed.ts                   # Create default SUPER_ADMIN + sample data
+      │
+      ├── modules/                      # Feature modules (Modular Pattern)
+      │   │
+      │   ├── auth/
+      │   │   ├── auth.routes.ts        # All /auth/* routes
+      │   │   ├── auth.controller.ts    # Request handler functions
+      │   │   ├── auth.service.ts       # Business logic
+      │   │   ├── auth.validation.ts    # Zod schemas for auth
+      │   │   └── auth.utils.ts         # Authentication configuration & helper functions
+      │   │
+      │   ├── user/
+      │   │   ├── user.routes.ts
+      │   │   ├── user.controller.ts
+      │   │   ├── user.service.ts
+      │   │   └── user.validation.ts
+      │   │
+      │   ├── company/
+      │   │   ├── company.routes.ts
+      │   │   ├── company.controller.ts
+      │   │   ├── company.service.ts
+      │   │   └── company.validation.ts
+      │   │
+      │   ├── financial-year/
+      │   │   ├── financialYear.routes.ts
+      │   │   ├── financialYear.controller.ts
+      │   │   ├── financialYear.service.ts
+      │   │   └── financialYear.validation.ts
+      │   │
+      │   ├── financial-data/
+      │   │   ├── financialData.routes.ts
+      │   │   ├── financialData.controller.ts
+      │   │   └── financialData.service.ts
+      │   │
+      │   ├── review/
+      │   │   ├── review.routes.ts
+      │   │   ├── review.controller.ts
+      │   │   ├── review.service.ts
+      │   │   └── review.validation.ts
+      │   │
+      │   ├── notification/
+      │   │   ├── notification.routes.ts
+      │   │   ├── notification.controller.ts
+      │   │   └── notification.service.ts
+      │   │
+      │   └── payment/                  # FUTURE — skeleton only
+      │       ├── payment.routes.ts     # Placeholder
+      │       └── payment.controller.ts # Placeholder
+      │
+      ├── middleware/
+      │   ├── auth.middleware.ts        # Better auth API session check
+      │   ├── role.middleware.ts        # Role-based access control
+      │   ├── validate.middleware.ts    # Zod request validation
+      │   └── error.middleware.ts       # Global error handler
+      │
+      └── shared/
+          ├── ApiError.ts              # Custom Error class
+          ├── ApiResponse.ts           # Standard response wrapper
+          ├── catchAsync.ts            # Async error wrapper
+          └── pagination.ts           # Pagination helper
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART D — DATABASE DESIGN
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+D1. ALL DATABASE MODELS (প্রতিটি field সহ)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── MODEL 1: User ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key (auto-generated)                │
+  │ name                 │ String              │ Full name                                   │
+  │ email                │ String UNIQUE       │ Email address (login identifier)            │
+  │ role                 │ UserRole Enum       │ STUDENT | ADMIN | SUPER_ADMIN               │
+  │ status               │ UserStatus Enum     │ ACTIVE | BANNED | DELETED                  │
+  │ emailVerified        │ Boolean             │ Email verified? Default: false              │
+  │ needPasswordChange   │ Boolean             │ Force password change? Default: false       │
+  │ profileImage         │ String? (nullable)  │ Profile image URL (optional)               │
+  │ bannedReason         │ String? (nullable)  │ Reason for ban (optional)                  │
+  │ bannedByUserId       │ String? (nullable)  │ FK → User (who banned this user)           │
+  │ googleId             │ String? UNIQUE      │ Google OAuth ID (optional)                 │
+  │ isDeleted            │ Boolean             │ Soft delete flag. Default: false            │
+  │ createdAt            │ DateTime            │ Auto-generated                              │
+  │ updatedAt            │ DateTime            │ Auto-updated                                │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 2: Company ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ name                 │ String              │ Client company name                         │
+  │ address              │ String? (nullable)  │ Company address (optional)                  │
+  │ createdByUserId      │ String              │ FK → User (who created this company)        │
+  │ isDeleted            │ Boolean             │ Soft delete. Default: false                 │
+  │ createdAt            │ DateTime            │ Auto-generated                              │
+  │ updatedAt            │ DateTime            │ Auto-updated                                │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 3: CompanyAssignment ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ userId               │ String              │ FK → User (the student)                     │
+  │ companyId            │ String              │ FK → Company                                │
+  │ assignedByUserId     │ String              │ FK → User (who assigned)                    │
+  │ assignedAt           │ DateTime            │ Default: now()                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+  Unique constraint: [userId, companyId] — same user cannot be assigned twice
+
+  ── MODEL 4: FinancialYear ──
+  ┌──────────────────────────┬─────────────────────┬──────────────────────────────────────────┐
+  │ Field                    │ Type                │ Description                              │
+  ├──────────────────────────┼─────────────────────┼──────────────────────────────────────────┤
+  │ id                       │ String UUID         │ Primary Key                              │
+  │ companyId                │ String              │ FK → Company                             │
+  │ year                     │ Int                 │ e.g. 2025, 2026                         │
+  │ reportingDate            │ String              │ e.g. "2026-06-30"                       │
+  │ reviewStatus             │ ReviewStatus Enum   │ DRAFT (default)                         │
+  │ isLocked                 │ Boolean             │ Default: false. True when FINALIZED      │
+  │ createdByUserId          │ String              │ FK → User                                │
+  │ currentReviewerUserId    │ String? (nullable)  │ FK → User (who is reviewing now)        │
+  │ finalizedByUserId        │ String? (nullable)  │ FK → User (who finalized)               │
+  │ finalizedAt              │ DateTime? (nullable) │ When finalized                          │
+  │ submittedAt              │ DateTime? (nullable) │ When submitted                          │
+  │ lastEditedByUserId       │ String? (nullable)  │ FK → User (last editor)                 │
+  │ createdAt                │ DateTime            │ Auto-generated                           │
+  │ updatedAt                │ DateTime            │ Auto-updated                             │
+  └──────────────────────────┴─────────────────────┴──────────────────────────────────────────┘
+
+  ── MODEL 5: AuditData ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ yearId               │ String UNIQUE       │ FK → FinancialYear (1:1 relationship)       │
+  │ auditReportData      │ Json                │ Cover + SFP/PNL refs (AuditReportData type) │
+  │ notesData            │ Json                │ N4-13 store data (N4_13_State type)         │
+  │ discussionData       │ Json                │ Discussion pages data (values + docStatuses)│
+  │ updatedAt            │ DateTime            │ Auto-updated on save                        │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+  Note: auditReportData contains: company, addr, reportingDate, startDate, ppe, discussionData
+  Note: notesData contains: sections[], bankAccounts[], loans[], shareholders[], company, ppe, configs
+
+  ── MODEL 6: ReviewEvent ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ yearId               │ String              │ FK → FinancialYear                          │
+  │ type                 │ ReviewEventType Enum │ CREATED, SUBMITTED, UNDER_REVIEW, etc.    │
+  │ actorUserId          │ String              │ FK → User (who did this action)             │
+  │ actorRole            │ String              │ Role at time of action (string copy)        │
+  │ note                 │ String? (nullable)  │ Optional comment/reason                    │
+  │ createdAt            │ DateTime            │ Default: now()                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 7: Notification ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ userId               │ String              │ FK → User (recipient)                       │
+  │ type                 │ NotificationType    │ ASSIGNMENT, REVIEW_SUBMITTED, etc.          │
+  │ title                │ String              │ Short title                                 │
+  │ message              │ String              │ Full notification text                      │
+  │ read                 │ Boolean             │ Default: false                              │
+  │ relatedCompanyId     │ String? (nullable)  │ Related company (optional)                 │
+  │ relatedYearId        │ String? (nullable)  │ Related financial year (optional)           │
+  │ createdAt            │ DateTime            │ Default: now()                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 8: OTP ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ email                │ String              │ User email                                  │
+  │ otp                  │ String              │ 6-digit OTP (plain or hashed)               │
+  │ expiresAt            │ DateTime            │ OTP validity window                         │
+  │ createdAt            │ DateTime            │ Default: now()                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 9: PasswordResetToken ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ userId               │ String              │ FK → User                                   │
+  │ token                │ String              │ Reset token (random hex string)             │
+  │ expiresAt            │ DateTime            │ Token expiry (e.g. 1 hour)                  │
+  │ used                 │ Boolean             │ Default: false (prevent reuse)              │
+  │ createdAt            │ DateTime            │ Default: now()                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+  ── MODEL 10: Payment (FUTURE — Skeleton only) ──
+  ┌──────────────────────┬─────────────────────┬─────────────────────────────────────────────┐
+  │ Field                │ Type                │ Description                                 │
+  ├──────────────────────┼─────────────────────┼─────────────────────────────────────────────┤
+  │ id                   │ String UUID         │ Primary Key                                 │
+  │ userId               │ String              │ FK → User                                   │
+  │ amount               │ Float               │ Payment amount                              │
+  │ transactionId        │ String              │ Gateway transaction ID                      │
+  │ status               │ PaymentStatus Enum  │ PENDING | PAID | FAILED                    │
+  │ paymentMethod        │ String              │ "sslcommerz" | "bkash" | "stripe"          │
+  │ createdAt            │ DateTime            │ Auto-generated                              │
+  └──────────────────────┴─────────────────────┴─────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+D2. ENUMS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  UserRole:         STUDENT | ADMIN | SUPER_ADMIN
+  UserStatus:       ACTIVE | BANNED | DELETED
+  ReviewStatus:     DRAFT | SUBMITTED | UNDER_REVIEW | CHANGES_REQUESTED | FINALIZED
+  ReviewEventType:  CREATED | SUBMITTED | UNDER_REVIEW | CHANGES_REQUESTED | FINALIZED | REOPENED
+  NotificationType: ASSIGNMENT | UNASSIGNMENT | REVIEW_SUBMITTED | REVIEW_STARTED |
+                    CHANGES_REQUESTED | FINALIZED | REOPENED | BAN | UNBAN | SYSTEM
+  PaymentStatus:    PENDING | PAID | FAILED
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+D3. RELATIONSHIPS MAP
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  User 1────────────N Company          (through createdByUserId)
+  User N────────────N Company          (through CompanyAssignment table)
+  Company 1─────────N FinancialYear
+  FinancialYear 1───1 AuditData        (one-to-one, UNIQUE yearId)
+  FinancialYear 1───N ReviewEvent
+  User 1────────────N Notification     (as recipient)
+  User 1────────────N ReviewEvent      (as actor)
+  User 1────────────N CompanyAssignment
+  User 1────────────N PasswordResetToken
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+D4. PRISMA SCHEMA (Complete — Copy and Use)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // File: backend/prisma/schema.prisma
+
+  generator client {
+    provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+  enum UserRole {
+    STUDENT
+    ADMIN
+    SUPER_ADMIN
+  }
+
+  enum UserStatus {
+    ACTIVE
+    BANNED
+    DELETED
+  }
+
+  enum ReviewStatus {
+    DRAFT
+    SUBMITTED
+    UNDER_REVIEW
+    CHANGES_REQUESTED
+    FINALIZED
+  }
+
+  enum ReviewEventType {
+    CREATED
+    SUBMITTED
+    UNDER_REVIEW
+    CHANGES_REQUESTED
+    FINALIZED
+    REOPENED
+  }
+
+  enum NotificationType {
+    ASSIGNMENT
+    UNASSIGNMENT
+    REVIEW_SUBMITTED
+    REVIEW_STARTED
+    CHANGES_REQUESTED
+    FINALIZED
+    REOPENED
+    BAN
+    UNBAN
+    SYSTEM
+  }
+
+  enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+  }
+
+  model User {
+    id                  String    @id @default(uuid())
+    name                String
+    email               String    @unique
+    password            String
+    role                UserRole  @default(STUDENT)
+    status              UserStatus @default(ACTIVE)
+    emailVerified       Boolean   @default(false)
+    needPasswordChange  Boolean   @default(false)
+    profileImage        String?
+    bannedReason        String?
+    bannedByUserId      String?
+    googleId            String?   @unique
+    isDeleted           Boolean   @default(false)
+    createdAt           DateTime  @default(now())
+    updatedAt           DateTime  @updatedAt
+
+    companies           Company[]             @relation("CompanyCreatedBy")
+    assignments         CompanyAssignment[]   @relation("AssignedUser")
+    assignedBy          CompanyAssignment[]   @relation("AssignedByUser")
+    notifications       Notification[]
+    reviewEvents        ReviewEvent[]
+    createdYears        FinancialYear[]       @relation("YearCreatedBy")
+    lastEditedYears     FinancialYear[]       @relation("YearLastEditedBy")
+    reviewingYears      FinancialYear[]       @relation("YearCurrentReviewer")
+    finalizedYears      FinancialYear[]       @relation("YearFinalizedBy")
+    passwordResetTokens PasswordResetToken[]
+  }
+
+  model Company {
+    id               String    @id @default(uuid())
+    name             String
+    address          String?
+    createdByUserId  String
+    isDeleted        Boolean   @default(false)
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+
+    createdBy        User               @relation("CompanyCreatedBy", fields: [createdByUserId], references: [id])
+    assignments      CompanyAssignment[]
+    financialYears   FinancialYear[]
+  }
+
+  model CompanyAssignment {
+    id                String   @id @default(uuid())
+    userId            String
+    companyId         String
+    assignedByUserId  String
+    assignedAt        DateTime @default(now())
+
+    user              User     @relation("AssignedUser", fields: [userId], references: [id])
+    company           Company  @relation(fields: [companyId], references: [id])
+    assignedBy        User     @relation("AssignedByUser", fields: [assignedByUserId], references: [id])
+
+    @@unique([userId, companyId])
+  }
+
+  model FinancialYear {
+    id                      String        @id @default(uuid())
+    companyId               String
+    year                    Int
+    reportingDate           String
+    reviewStatus            ReviewStatus  @default(DRAFT)
+    isLocked                Boolean       @default(false)
+    createdByUserId         String
+    currentReviewerUserId   String?
+    finalizedByUserId       String?
+    finalizedAt             DateTime?
+    submittedAt             DateTime?
+    lastEditedByUserId      String?
+    createdAt               DateTime      @default(now())
+    updatedAt               DateTime      @updatedAt
+
+    company                 Company       @relation(fields: [companyId], references: [id])
+    createdBy               User          @relation("YearCreatedBy", fields: [createdByUserId], references: [id])
+    currentReviewer         User?         @relation("YearCurrentReviewer", fields: [currentReviewerUserId], references: [id])
+    finalizedBy             User?         @relation("YearFinalizedBy", fields: [finalizedByUserId], references: [id])
+    lastEditedBy            User?         @relation("YearLastEditedBy", fields: [lastEditedByUserId], references: [id])
+    auditData               AuditData?
+    reviewEvents            ReviewEvent[]
+  }
+
+  model AuditData {
+    id                 String        @id @default(uuid())
+    yearId             String        @unique
+    auditReportData    Json
+    notesData          Json
+    discussionData     Json
+    updatedAt          DateTime      @updatedAt
+
+    financialYear      FinancialYear @relation(fields: [yearId], references: [id])
+  }
+
+  model ReviewEvent {
+    id            String          @id @default(uuid())
+    yearId        String
+    type          ReviewEventType
+    actorUserId   String
+    actorRole     String
+    note          String?
+    createdAt     DateTime        @default(now())
+
+    financialYear FinancialYear   @relation(fields: [yearId], references: [id])
+    actor         User            @relation(fields: [actorUserId], references: [id])
+  }
+
+  model Notification {
+    id                String           @id @default(uuid())
+    userId            String
+    type              NotificationType
+    title             String
+    message           String
+    read              Boolean          @default(false)
+    relatedCompanyId  String?
+    relatedYearId     String?
+    createdAt         DateTime         @default(now())
+
+    user              User             @relation(fields: [userId], references: [id])
+  }
+
+  model OTP {
+    id         String   @id @default(uuid())
+    email      String
+    otp        String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+  }
+
+  model PasswordResetToken {
+    id        String   @id @default(uuid())
+    userId    String
+    token     String
+    expiresAt DateTime
+    used      Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    user      User     @relation(fields: [userId], references: [id])
+  }
+
+  model Payment {
+    id             String        @id @default(uuid())
+    userId         String
+    amount         Float
+    transactionId  String
+    status         PaymentStatus @default(PENDING)
+    paymentMethod  String
+    createdAt      DateTime      @default(now())
+  }
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART E — API REFERENCE (সম্পূর্ণ API ডকুমেন্টেশন)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E1. STANDARD API RESPONSE FORMAT
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Base URL: http://localhost:5000/api/v1
+  (Production: https://api.audit-x.com/api/v1)
+
+  ✅ Success Response:
+  {
+    "success": true,
+    "message": "Human-readable message",
+    "data": { ... }  // Single object or array
+  }
+
+  ✅ Success with Pagination:
+  {
+    "success": true,
+    "message": "Users fetched successfully",
+    "data": [ ... ],
+    "meta": {
+      "page": 1,
+      "limit": 10,
+      "total": 47,
+      "totalPages": 5
+    }
+  }
+
+  ❌ Error Response:
+  {
+    "success": false,
+    "message": "Error description",
+    "errorDetails": [           // Optional, for validation errors
+      { "field": "email", "message": "Invalid email format" }
+    ]
+  }
+
+  HTTP Status Codes Used:
+  ─────────────────────────
+  200 → OK (success, update, get)
+  201 → Created (new resource)
+  400 → Bad Request (validation error)
+  401 → Unauthorized (no token / invalid token)
+  403 → Forbidden (not enough role)
+  404 → Not Found (resource doesn't exist)
+  409 → Conflict (duplicate email, duplicate year)
+  500 → Internal Server Error
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E2. AUTH APIs (12 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⚠️ Cookie Strategy:
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ GET     │ /auth/me                         │ Get current logged-in user                            │
+  │         │                                  │ → Response: { user: full profile }                    │
+  │         │                                  │ Auth: ✅ Required                                     │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ POST    │ /auth/verify-email               │ Verify email with OTP                                 │
+  │         │                                  │ Body: { email, otp }                                  │
+  │         │                                  │ → Sets emailVerified = true on User                   │
+  │         │                                  │ → Deletes OTP record from DB                          │
+  │         │                                  │ Auth: ❌                                              │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ POST    │ /auth/resend-otp                 │ Resend email verification OTP                         │
+  │         │                                  │ Body: { email }                                       │
+  │         │                                  │ → Deletes old OTP, creates new one                    │
+  │         │                                  │ → Sends email (log to console if SMTP not configured) │
+  │         │                                  │ Auth: ❌                                              │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ POST    │ /auth/forgot-password            │ Send password reset email                             │
+  │         │                                  │ Body: { email }                                       │
+  │         │                                  │ → Creates PasswordResetToken (1 hour expiry)          │
+  │         │                                  │ → Sends email with link: /reset-password?token=...    │
+  │         │                                  │ Auth: ❌                                              │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ POST    │ /auth/reset-password             │ Reset password with token                             │
+  │         │                                  │ Body: { token, newPassword }                          │
+  │         │                                  │ → Verifies token, checks expiry, checks not used      │
+  │         │                                  │ → Hashes + sets new password                          │
+  │         │                                  │ → Marks token as used                                 │
+  │         │                                  │ Auth: ❌                                              │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ POST    │ /auth/change-password            │ Change password while logged in                       │
+  │         │                                  │ Body: { oldPassword, newPassword }                    │
+  │         │                                  │ → Verifies oldPassword, hashes new, saves             │
+  │         │                                  │ Auth: ✅ Required                                     │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ GET     │ /auth/google                     │ Google OAuth redirect                                 │
+  │         │                                  │ → Redirects to Google consent screen                  │
+  │         │                                  │ Auth: ❌                                              │
+  ├─────────┼──────────────────────────────────┼───────────────────────────────────────────────────────┤
+  │ GET     │ /auth/google/callback            │ Google OAuth callback                                 │
+  │         │                                  │ → Finds or creates user with google data              │
+  │         │                                  │ → Sets auth cookies, redirects to /dashboard          │
+  │         │                                  │ Auth: ❌                                              │
+  └─────────┴──────────────────────────────────┴───────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E3. USER APIs (10 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /users                           │ Get all users (paginated)                    │
+  │         │                                  │ Query: ?page=1&limit=10&role=STUDENT         │
+  │         │                                  │       &status=ACTIVE&searchTerm=john         │
+  │         │                                  │ → Returns: paginated user list               │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /users/:id                       │ Get user by ID                               │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /users/create-user               │ Admin creates a user with any role           │
+  │         │                                  │ Body: { name, email, password, role }        │
+  │         │                                  │ → Sets emailVerified = true (admin-created)  │
+  │         │                                  │ → Sets needPasswordChange = true             │
+  │         │                                  │ Auth: ✅ SUPER_ADMIN only                    │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/:id                       │ Update user name/email (general update)      │
+  │         │                                  │ Body: { name?, email? }                      │
+  │         │                                  │ Auth: ✅ SUPER_ADMIN                         │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/:id/role                  │ Change user role                             │
+  │         │                                  │ Body: { role: "ADMIN" | "STUDENT" }          │
+  │         │                                  │ Auth: ✅ SUPER_ADMIN only                    │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/:id/ban                   │ Ban a user                                   │
+  │         │                                  │ Body: { reason?: string }                    │
+  │         │                                  │ → Sets status = BANNED, bannedReason         │
+  │         │                                  │ → Creates BANNED notification for user       │
+  │         │                                  │ Auth: ✅ ADMIN (students only), SUPER_ADMIN  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/:id/unban                 │ Unban a user                                 │
+  │         │                                  │ → Sets status = ACTIVE, clears bannedReason  │
+  │         │                                  │ → Creates UNBAN notification for user        │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ DELETE  │ /users/:id                       │ Soft delete a user                           │
+  │         │                                  │ → Sets isDeleted = true, status = DELETED    │
+  │         │                                  │ Auth: ✅ SUPER_ADMIN only                    │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /users/my-profile                │ Get current user's own profile               │
+  │         │                                  │ Auth: ✅ Any logged-in user                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/my-profile                │ Update own profile                           │
+  │         │                                  │ Body: { name? }                              │
+  │         │                                  │ Auth: ✅ Any logged-in user                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /users/my-profile/image          │ Upload profile image                         │
+  │         │                                  │ Body: multipart/form-data with field "image" │
+  │         │                                  │ → Saves file to uploads/profiles/            │
+  │         │                                  │ → Updates profileImage URL in User table     │
+  │         │                                  │ Auth: ✅ Any logged-in user                  │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E4. COMPANY APIs (7 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /companies                       │ Get accessible companies                     │
+  │         │                                  │ Query: ?searchTerm=abc&page=1&limit=10       │
+  │         │                                  │ STUDENT → only assigned companies            │
+  │         │                                  │ ADMIN/SA → all companies (not deleted)       │
+  │         │                                  │ Auth: ✅ Required                            │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /companies/:id                   │ Get company detail                           │
+  │         │                                  │ → Checks access permission                   │
+  │         │                                  │ Auth: ✅ Required + access check             │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /companies                       │ Create a new company                         │
+  │         │                                  │ Body: { name, address? }                     │
+  │         │                                  │ → Auto-assigns creator as member             │
+  │         │                                  │ → Creates CompanyAssignment for creator      │
+  │         │                                  │ Auth: ✅ Required (any role)                 │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /companies/:id                   │ Update company details                       │
+  │         │                                  │ Body: { name?, address? }                    │
+  │         │                                  │ Auth: ✅ Creator or ADMIN/SA                 │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ DELETE  │ /companies/:id                   │ Soft delete company                          │
+  │         │                                  │ → Sets isDeleted = true                      │
+  │         │                                  │ Auth: ✅ Creator or ADMIN/SA                 │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /companies/:id/assign            │ Assign a student to this company             │
+  │         │                                  │ Body: { userId }                             │
+  │         │                                  │ → Creates CompanyAssignment record           │
+  │         │                                  │ → Creates ASSIGNMENT notification for student│
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /companies/:id/unassign          │ Remove a student from this company           │
+  │         │                                  │ Body: { userId }                             │
+  │         │                                  │ → Deletes CompanyAssignment record           │
+  │         │                                  │ → Creates UNASSIGNMENT notification          │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /companies/:id/members           │ Get all members (students) of a company      │
+  │         │                                  │ → Returns list of assigned users             │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E5. FINANCIAL YEAR APIs (6 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Base path: /companies/:companyId/years
+
+  ┌─────────┬──────────────────────────────────────────┬────────────────────────────────────────┐
+  │ Method  │ Endpoint                                 │ Description                            │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ GET     │ /companies/:companyId/years              │ Get all years for this company         │
+  │         │                                          │ → Sorted by year ascending             │
+  │         │                                          │ Auth: ✅ + company access check        │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ GET     │ /companies/:companyId/years/:yearId      │ Get single financial year detail       │
+  │         │                                          │ Auth: ✅ + company access check        │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ POST    │ /companies/:companyId/years              │ Create new financial year              │
+  │         │                                          │ Body: { reportingDate: "2026-06-30" }  │
+  │         │                                          │ → Calculates year number from date     │
+  │         │                                          │ → Creates FinancialYear record         │
+  │         │                                          │ → Creates empty AuditData record       │
+  │         │                                          │ → AuditData JSON = default empty data  │
+  │         │                                          │ → Creates ReviewEvent: CREATED         │
+  │         │                                          │ Auth: ✅ + company access              │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ PATCH   │ /companies/:companyId/years/:yearId      │ Update year metadata                   │
+  │         │                                          │ Body: { reportingDate? }               │
+  │         │                                          │ → Only allowed if not FINALIZED        │
+  │         │                                          │ Auth: ✅ + company access              │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ DELETE  │ /companies/:companyId/years/:yearId      │ Delete a financial year                │
+  │         │                                          │ → Also deletes AuditData + Events      │
+  │         │                                          │ Auth: ✅ Creator or ADMIN/SA           │
+  ├─────────┼──────────────────────────────────────────┼────────────────────────────────────────┤
+  │ POST    │ /companies/:companyId/years/:yearId      │ Rollover: carry-forward from prev year │
+  │         │ /rollover                                │ → Creates new FinancialYear            │
+  │         │                                          │ → Body: { reportingDate }              │
+  │         │                                          │ → Carries forward:                     │
+  │         │                                          │   • PPE closing → new opening          │
+  │         │                                          │   • Notes: value_cy → value_py         │
+  │         │                                          │   • Bank accounts: CY → PY, CY = 0    │
+  │         │                                          │   • Loans: CY total → PY, CY = 0      │
+  │         │                                          │   • Shareholders: copied as-is         │
+  │         │                                          │   • Configs: shareConfig, taxConfig    │
+  │         │                                          │ → Same logic as prototype's            │
+  │         │                                          │   startNewYear() in useAppStore.ts     │
+  │         │                                          │ Auth: ✅ + company access              │
+  └─────────┴──────────────────────────────────────────┴────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E6. FINANCIAL DATA APIs (4 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  These endpoints read/write the JSON blobs stored in AuditData table.
+  This is the core data of the financial statements.
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /financial-data/:yearId          │ Get full AuditData for this year             │
+  │         │                                  │ → Returns: {                                  │
+  │         │                                  │     auditReportData: AuditReportData,         │
+  │         │                                  │     notesData: N4_13_State,                   │
+  │         │                                  │     discussionData: { docStatuses, values }   │
+  │         │                                  │   }                                           │
+  │         │                                  │ Auth: ✅ + year access check                 │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /financial-data/:yearId          │ Update auditReportData (Cover/PPE data)      │
+  │         │ /audit-report-data               │ Body: { ...partial AuditReportData }         │
+  │         │                                  │ → Deep merges with existing data              │
+  │         │                                  │ → Checks: not locked, user has access         │
+  │         │                                  │ → Updates lastEditedByUserId on FinancialYear │
+  │         │                                  │ Auth: ✅ + canEdit check                     │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /financial-data/:yearId          │ Update notesData (N4-13 notes data)          │
+  │         │ /notes-data                      │ Body: { ...partial N4_13_State }             │
+  │         │                                  │ → Deep merges with existing notesData         │
+  │         │                                  │ → Checks: not locked, user has access         │
+  │         │                                  │ Auth: ✅ + canEdit check                     │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /financial-data/:yearId          │ Update discussion data (P_Discussion)        │
+  │         │ /discussion-data                 │ Body: { docStatuses?, values? }              │
+  │         │                                  │ → Merges into existing discussionData         │
+  │         │                                  │ Auth: ✅ + canEdit check                     │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+  canEdit Rule:
+  ─────────────
+  User can edit FS if ALL of these are true:
+  1. User has access to the company (assigned or ADMIN/SA)
+  2. Year is NOT locked (isLocked = false)
+  3. ReviewStatus is not SUBMITTED or UNDER_REVIEW (unless user is ADMIN/SA)
+  4. User status is ACTIVE (not banned)
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E7. REVIEW APIs (7 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /reviews/:yearId/submit          │ Student submits for review                   │
+  │         │                                  │ → Updates reviewStatus = SUBMITTED            │
+  │         │                                  │ → Sets submittedAt = now()                   │
+  │         │                                  │ → Creates ReviewEvent: SUBMITTED             │
+  │         │                                  │ → Notifies all ADMIN + SUPER_ADMIN users     │
+  │         │                                  │   type: REVIEW_SUBMITTED                     │
+  │         │                                  │ Auth: ✅ STUDENT + year access               │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /reviews/:yearId/start-review    │ Admin starts reviewing                       │
+  │         │                                  │ → Updates reviewStatus = UNDER_REVIEW        │
+  │         │                                  │ → Sets currentReviewerUserId = req.user.id   │
+  │         │                                  │ → Creates ReviewEvent: UNDER_REVIEW          │
+  │         │                                  │ → Notifies assigned students of company      │
+  │         │                                  │   type: REVIEW_STARTED                       │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /reviews/:yearId/request-changes │ Admin requests changes                       │
+  │         │                                  │ Body: { note?: string }                      │
+  │         │                                  │ → Updates reviewStatus = CHANGES_REQUESTED   │
+  │         │                                  │ → Creates ReviewEvent: CHANGES_REQUESTED     │
+  │         │                                  │ → Notifies assigned students                 │
+  │         │                                  │   type: CHANGES_REQUESTED                    │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /reviews/:yearId/finalize        │ Admin finalizes (locks) the FS               │
+  │         │                                  │ Body: { note?: string }                      │
+  │         │                                  │ → Updates reviewStatus = FINALIZED           │
+  │         │                                  │ → Sets isLocked = true                       │
+  │         │                                  │ → Sets finalizedByUserId, finalizedAt         │
+  │         │                                  │ → Creates ReviewEvent: FINALIZED             │
+  │         │                                  │ → Notifies all assigned students             │
+  │         │                                  │   type: FINALIZED                            │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ POST    │ /reviews/:yearId/reopen          │ Admin reopens (unlocks) the FS               │
+  │         │                                  │ Body: { note?: string }                      │
+  │         │                                  │ → Updates reviewStatus = DRAFT               │
+  │         │                                  │ → Sets isLocked = false                      │
+  │         │                                  │ → Clears currentReviewerUserId               │
+  │         │                                  │ → Creates ReviewEvent: REOPENED              │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /reviews/queue                   │ Get review queue                             │
+  │         │                                  │ → Returns years with status:                 │
+  │         │                                  │   SUBMITTED or UNDER_REVIEW                  │
+  │         │                                  │ → Sorted by submittedAt ascending            │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /reviews/:yearId/events          │ Get all review events for a year             │
+  │         │                                  │ → Returns timeline of all review actions     │
+  │         │                                  │ → Sorted by createdAt ascending              │
+  │         │                                  │ Auth: ✅ Required + access check             │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E8. NOTIFICATION APIs (4 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /notifications                   │ Get current user's notifications             │
+  │         │                                  │ Query: ?page=1&limit=20                      │
+  │         │                                  │ → Sorted by createdAt DESC (newest first)    │
+  │         │                                  │ → Paginated response with meta               │
+  │         │                                  │ Auth: ✅ Required                            │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /notifications/:id/read          │ Mark one notification as read                │
+  │         │                                  │ → Sets read = true for this notification      │
+  │         │                                  │ Auth: ✅ Required (must be the recipient)    │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ PATCH   │ /notifications/read-all          │ Mark all notifications as read               │
+  │         │                                  │ → Sets read = true for all user's notifs     │
+  │         │                                  │ Auth: ✅ Required                            │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /notifications/unread-count      │ Get unread notification count                │
+  │         │                                  │ → Response: { count: number }                │
+  │         │                                  │ Auth: ✅ Required                            │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E9. STATS APIs (2 endpoints)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────┬──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Method  │ Endpoint                         │ Description                                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /stats/admin                     │ Admin dashboard stats                        │
+  │         │                                  │ → Response: {                                 │
+  │         │                                  │     totalStudents: number,                    │
+  │         │                                  │     totalAdmins: number,                      │
+  │         │                                  │     totalCompanies: number,                   │
+  │         │                                  │     totalFinancialYears: number,              │
+  │         │                                  │     pendingReviews: number, (SUBMITTED count) │
+  │         │                                  │     activeReviews: number, (UNDER_REVIEW)     │
+  │         │                                  │     finalizedYears: number,                   │
+  │         │                                  │     recentActivity: ReviewEvent[5]            │
+  │         │                                  │   }                                           │
+  │         │                                  │ Auth: ✅ ADMIN, SUPER_ADMIN                  │
+  ├─────────┼──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ GET     │ /stats/system                    │ System-level stats                           │
+  │         │                                  │ → Response: {                                 │
+  │         │                                  │     totalUsers: number,                       │
+  │         │                                  │     roleBreakdown: { STUDENT, ADMIN, SA },    │
+  │         │                                  │     statusBreakdown: { ACTIVE, BANNED },      │
+  │         │                                  │     totalCompanies: number,                   │
+  │         │                                  │     totalYears: number                        │
+  │         │                                  │   }                                           │
+  │         │                                  │ Auth: ✅ SUPER_ADMIN only                    │
+  └─────────┴──────────────────────────────────┴──────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+E10. PAYMENT APIs (FUTURE — Do NOT implement now)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ⚠️ Payment gateway এখনো select করা হয়নি।
+  ⚠️ Options: SSLCommerz (Bangladesh), bKash, Stripe (International)
+  ⚠️ Database Payment model ready আছে।
+  ⚠️ Backend payment/ folder skeleton ready থাকবে (empty routes + controller)।
+
+  Future endpoints (implement later):
+  POST /payments/initiate     → Payment start
+  POST /payments/callback     → Webhook (no auth — gateway calls this)
+  GET  /payments/:id          → Get payment detail
+  GET  /payments              → Admin: all payments
+
+  When ready:
+  1. Gateway select করো
+  2. Gateway SDK install করো (e.g., sslcommerz-lts)
+  3. payment.service.ts implement করো
+  4. Frontend-এ payment flow যোগ করো
+  5. Webhook handle করো
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART F — FRONTEND UPGRADE DETAILS
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F1. httpClient.ts — Axios Service Layer
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  File: frontend/src/services/httpClient.ts
+
+  // Create Axios instance
+  const httpClient = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    withCredentials: true,  // CRITICAL: cookies sent with every request
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // Response interceptor logic:
+  // 1. If response is OK → pass through
+  // 2. If 401 error:
+  //    a. Since we use Better Auth, 401 means session is truly dead.
+  //    b. Clear Zustand auth state → redirect to /auth
+  // 3. Any other error → reject with formatted error message
+
+  export default httpClient;
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F2. AUTH FLOW (Better Auth Session Based)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Login Flow:
+  ──────────
+  Step 1: User enters email + password
+  Step 2: Better Auth client calls signIn()
+  Step 3: Better Auth sets session token cookie automatically.
+  Step 4: Frontend updates Zustand store / relies on useSession() from Better Auth.
+
+  Session Flow:
+  ─────────────
+  Step 1: session is handled seamlessly by Better Auth.
+  Step 2: Server automatically resolves sessions on /auth/me or middleware.
+  Step 3: If 401 Unauthorized occurs, redirect to login.
+
+  Page Reload Auth Check:
+  ─────────────────────────
+  Step 1: App mounts
+  Step 2: DashboardLayout calls GET /auth/me on mount
+  Step 3: If success → set user in Zustand
+  Step 4: If 401 → redirect to /auth
+
+  ⚠️ Frontend কখনো token নিজে localStorage-এ রাখবে না।
+  ⚠️ Cookies httpOnly — JavaScript access নেই, XSS safe।
+  ⚠️ withCredentials: true ছাড়া cookies যাবে না।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F3. SERVICE FILES (Function List)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── auth.service.ts ──
+  login(email, password)           → POST /auth/login
+  register(name, email, password)  → POST /auth/register
+  logout()                         → POST /auth/logout
+  getMe()                          → GET /auth/me
+  verifyEmail(email, otp)          → POST /auth/verify-email
+  resendOtp(email)                 → POST /auth/resend-otp
+  forgotPassword(email)            → POST /auth/forgot-password
+  resetPassword(token, newPass)    → POST /auth/reset-password
+  changePassword(oldPass, newPass) → POST /auth/change-password
+
+  ── user.service.ts ──
+  getAll(query)                    → GET /users?role=&status=&searchTerm=&page=&limit=
+  getById(id)                      → GET /users/:id
+  createUser(data)                 → POST /users/create-user
+  updateRole(id, role)             → PATCH /users/:id/role
+  ban(id, reason?)                 → PATCH /users/:id/ban
+  unban(id)                        → PATCH /users/:id/unban
+  deleteUser(id)                   → DELETE /users/:id
+  getMyProfile()                   → GET /users/my-profile
+  updateMyProfile(data)            → PATCH /users/my-profile
+  uploadProfileImage(file)         → PATCH /users/my-profile/image (FormData)
+
+  ── company.service.ts ──
+  getAll(query?)                   → GET /companies
+  getById(id)                      → GET /companies/:id
+  create(name, address?)           → POST /companies
+  update(id, data)                 → PATCH /companies/:id
+  remove(id)                       → DELETE /companies/:id
+  assign(companyId, userId)        → POST /companies/:id/assign
+  unassign(companyId, userId)      → POST /companies/:id/unassign
+  getMembers(companyId)            → GET /companies/:id/members
+
+  ── financialYear.service.ts ──
+  getAll(companyId)                → GET /companies/:companyId/years
+  getById(companyId, yearId)       → GET /companies/:companyId/years/:yearId
+  create(companyId, reportingDate) → POST /companies/:companyId/years
+  update(companyId, yearId, data)  → PATCH /companies/:companyId/years/:yearId
+  remove(companyId, yearId)        → DELETE /companies/:companyId/years/:yearId
+  rollover(companyId, yearId, reportingDate) → POST /companies/:companyId/years/:yearId/rollover
+
+  ── financialData.service.ts ──
+  getFullData(yearId)              → GET /financial-data/:yearId
+  updateAuditReportData(yearId, partial) → PATCH /financial-data/:yearId/audit-report-data
+  updateNotesData(yearId, partial)       → PATCH /financial-data/:yearId/notes-data
+  updateDiscussionData(yearId, partial)  → PATCH /financial-data/:yearId/discussion-data
+
+  ── review.service.ts ──
+  submit(yearId)                   → POST /reviews/:yearId/submit
+  startReview(yearId)              → POST /reviews/:yearId/start-review
+  requestChanges(yearId, note?)    → POST /reviews/:yearId/request-changes
+  finalize(yearId, note?)          → POST /reviews/:yearId/finalize
+  reopen(yearId, note?)            → POST /reviews/:yearId/reopen
+  getQueue()                       → GET /reviews/queue
+  getEvents(yearId)                → GET /reviews/:yearId/events
+
+  ── notification.service.ts ──
+  getAll(page?, limit?)            → GET /notifications
+  markRead(id)                     → PATCH /notifications/:id/read
+  markAllRead()                    → PATCH /notifications/read-all
+  getUnreadCount()                 → GET /notifications/unread-count
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F4. ZUSTAND STORE MIGRATION STRATEGY
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Phase 1 — Auth Data Migration:
+  ────────────────────────────────
+  Remove from persist: users[], currentUserId
+  Keep in persist: activeCompanyId, activeYearId (for UX continuity)
+  
+  New Zustand auth state:
+  {
+    currentUser: User | null,   // from /auth/me (in-memory only)
+    isAuthChecked: boolean,     // has /auth/me been called
+    setCurrentUser: (user) => void,
+    clearAuth: () => void,
+  }
+
+  Phase 2 — Company/Year Data:
+  ──────────────────────────────
+  Remove from persist: users[].companies (all company/year data)
+  New approach: fetch from API on component mount
+  
+  Zustand stores only:
+  - activeCompanyId (UX: remember last selected)
+  - activeYearId (UX: remember last selected)
+
+  Phase 3 — Financial Statement Data:
+  ──────────────────────────────────────
+  N4-13 store.ts (proxy) still reads from useAppStore
+  But useAppStore now gets data from API instead of localStorage
+  
+  Flow: Component mount → fetch /financial-data/:yearId → set in Zustand
+  On edit → Zustand updates (instant) → debounced PATCH to API
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F5. AUTO-SAVE PATTERN (Debounced API Sync)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  useAuditData hook updated pattern:
+
+  1. On mount (activeYearId changes):
+     → Call financialDataService.getFullData(yearId)
+     → Set auditReportData + notesData + discussionData in store
+
+  2. On user edit (any field change):
+     → Zustand updates instantly (for immediate UI responsiveness)
+     → Start 2-second debounce timer
+     → If user edits again → reset timer
+     → After 2 seconds of no edits → call API
+
+  3. API save:
+     → financialDataService.updateNotesData(yearId, changedData)
+     → Show saving indicator ("Saving..." → "Saved ✓")
+     → On error → show toast "Failed to save. Retrying..."
+
+  4. Saving indicator in UI:
+     → Add `isSaving: boolean` to state
+     → Show in Sidebar or Navigation bar
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+F6. FRONTEND VALIDATION & AUTH UX STRATEGY (🆕 NEW — CRITICAL)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+⚠️ NOTE:
+Existing prototype has NO proper frontend validation.
+This section defines the production-ready validation system.
+
+─────────────────────────────────────────────────────────────
+
+1. VALIDATION APPROACH
+   ─────────────────────────────────────────────────────────────
+
+Frontend validation will be implemented using:
+
+→ react-hook-form (form state management)
+→ Zod (schema validation — aligned with backend)
+
+Goal:
+• Prevent invalid API calls
+• Provide instant user feedback
+• Maintain consistency with backend validation
+
+Folder Structure:
+──────────────────
+src/validation/
+├── auth.schema.ts
+├── user.schema.ts
+└── common.schema.ts
+
+─────────────────────────────────────────────────────────────
+2. FORM VALIDATION RULES
+─────────────────────────────────────────────────────────────
+
+Login Form:
+• email → required, valid format
+• password → required, min 6 chars
+
+Register Form:
+• name → required
+• email → valid format
+• password → min 6 chars, must include number
+• confirmPassword → must match password
+
+Forgot Password:
+• email → required, valid
+
+Reset Password:
+• newPassword → min 6 chars
+• confirmPassword → match
+
+OTP Verification:
+• otp → exactly 6 digits
+
+Profile Update:
+• name → required
+• image → jpg/png, max 5MB
+
+─────────────────────────────────────────────────────────────
+3. FORM HANDLING PATTERN
+─────────────────────────────────────────────────────────────
+
+Pattern:
+→ Form submit → validate (Zod)
+→ If invalid → show inline errors
+→ If valid → call API service
+
+UI Behavior:
+• Disable submit button while loading
+• Show inline error under each field
+• Use toast for global errors
+
+─────────────────────────────────────────────────────────────
+4. AUTHENTICATION UX FLOW (FRONTEND)
+─────────────────────────────────────────────────────────────
+
+Login Flow:
+
+1. User submits form
+2. Frontend validates input
+3. API call → /auth/login
+4. Success:
+   → redirect to /dashboard
+5. Error handling:
+   → Invalid credentials → show error
+   → Unverified email → show verify prompt
+   → Banned user → show access restricted
+
+Register Flow:
+
+1. Validate form
+2. Call /auth/register
+3. Show OTP verification screen
+
+Token Handling:
+• Cookies (httpOnly) managed by backend
+• Frontend only checks auth via /auth/me
+
+─────────────────────────────────────────────────────────────
+5. API ERROR HANDLING (FRONTEND)
+─────────────────────────────────────────────────────────────
+
+Backend Error Format:
+{
+success: false,
+message: "Error message",
+errorDetails: [{ field, message }]
+}
+
+Frontend Handling:
+• Map field errors → form fields
+• Show message → toast
+
+Example:
+• email already exists → show under email field
+• server error → show global toast
+
+─────────────────────────────────────────────────────────────
+6. SECURITY ENHANCEMENTS (CLIENT-SIDE)
+─────────────────────────────────────────────────────────────
+
+• Trim all inputs before submit
+• Prevent empty string submission
+• Disable multiple submissions
+• Basic input sanitization
+• Avoid exposing sensitive error details
+
+─────────────────────────────────────────────────────────────
+7. BENEFITS
+─────────────────────────────────────────────────────────────
+
+• Better UX (instant validation)
+• Reduced API load
+• Consistent validation (frontend + backend)
+• Production-ready auth flow
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART G — BACKEND IMPLEMENTATION GUIDE
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+G1. MIDDLEWARE DETAILS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ── auth.middleware.ts ──
+  export const authenticate = (req, res, next) => {
+    // 1. Extract token from cookies: req.cookies.accessToken
+    // 2. If no token → ApiError(401, "Authentication required")
+    // 4. If invalid → ApiError(401, "Invalid or expired token")
+    // 5. Fetch user from DB: await prisma.user.findUnique({ where: { id: decoded.id } })
+    // 6. Check: user exists, not deleted, not DELETED status
+    // 7. Attach to req: req.user = { id, email, role, status }
+    // 8. Call next()
+  }
+
+  ── role.middleware.ts ──
+  export const authorize = (...allowedRoles: UserRole[]) => {
+    return (req, res, next) => {
+      if (!req.user) → ApiError(401)
+      if (!allowedRoles.includes(req.user.role)) → ApiError(403, "Insufficient permissions")
+      next()
+    }
+  }
+  // Usage: router.get('/users', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), controller.getUsers)
+
+  ── validate.middleware.ts ──
+  export const validate = (schema: ZodSchema) => {
+    return (req, res, next) => {
+      const result = schema.safeParse(req.body)
+      if (!result.success) {
+        const errors = result.error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+        → ApiError(400, "Validation failed", errors)
+      }
+      req.body = result.data  // Use sanitized data
+      next()
+    }
+  }
+
+  ── error.middleware.ts ──
+  export const globalErrorHandler = (err, req, res, next) => {
+    if (err instanceof ApiError) {
+      return res.status(err.statusCode).json({
+        success: false,
+        message: err.message,
+        errorDetails: err.errorDetails || undefined
+      })
+    }
+    // Unknown errors
+    return res.status(500).json({
+      success: false,
+      message: NODE_ENV === 'production' ? 'Internal server error' : err.message
+    })
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+G2. BETTER AUTH CONFIGURATION
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // auth.utils.ts functions:
+
+  hashPassword(password: string): Promise<string>
+  → bcrypt.hash(password, 12)  // 12 rounds
+
+  comparePassword(plain: string, hash: string): Promise<boolean>
+  → bcrypt.compare(plain, hash)
+
+  generateAccessToken(payload: { id, email, role }): string
+
+  generateRefreshToken(payload: { id }): string
+
+  setSession(req, res): handled by Better Auth
+  → res.cookie('accessToken', accessToken, { httpOnly: true, sameSite: 'lax', maxAge: 30*60*1000 })
+  
+  clearCookies(res): void
+  → res.clearCookie('accessToken')
+  
+  generateOTP(): string
+  → Math.floor(100000 + Math.random() * 900000).toString()  // 6-digit
+
+  generateResetToken(): string
+  → crypto.randomBytes(32).toString('hex')
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+G3. EMAIL SERVICE SETUP
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // src/config/mailer.ts
+
+  Use nodemailer with SMTP transport:
+  {
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: false,  // true for 465, false for other
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  }
+
+  If SMTP not configured (env vars missing):
+  → Log to console instead of sending email
+  → This allows development without email setup
+
+  Email templates needed:
+  1. OTP verification email:
+     Subject: "Verify your Audit-X account"
+     Body: "Your OTP is: {otp}. Valid for {OTP_EXPIRES_MINUTES} minutes."
+
+  2. Password reset email:
+     Subject: "Reset your Audit-X password"
+     Body: "Click this link to reset: {FRONTEND_URL}/reset-password?token={token}"
+     Note: Link expires in 1 hour.
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+G4. FILE UPLOAD SETUP
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // Multer configuration for profile images
+
+  Storage: diskStorage
+  Destination: uploads/profiles/
+  Filename: ${userId}-${Date.now()}.${ext}
+
+  Filters:
+  - Only allow: image/jpeg, image/png, image/webp, image/gif
+  - Max size: MAX_FILE_SIZE (5MB)
+
+  After upload:
+  - File saved to local disk
+  - URL: /uploads/profiles/${filename}
+  - Update User.profileImage = `/uploads/profiles/${filename}`
+
+  Serve static files:
+  app.use('/uploads', express.static('./uploads'))
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+G5. ERROR HANDLING PATTERN
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  // ApiError.ts
+  class ApiError extends Error {
+    statusCode: number
+    errorDetails?: any[]
+    constructor(statusCode, message, errorDetails?)
+  }
+
+  // catchAsync.ts
+  const catchAsync = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next)
+  }
+
+  // Usage in controller:
+  export const getUsers = catchAsync(async (req, res) => {
+    const users = await userService.getAll(req.query)
+    ApiResponse.send(res, 200, 'Users fetched', users)
+  })
+
+  // ApiResponse.ts
+  class ApiResponse {
+    static send(res, statusCode, message, data?, meta?) {
+      return res.status(statusCode).json({
+        success: true,
+        message,
+        data: data || undefined,
+        meta: meta || undefined
+      })
+    }
+  }
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART H — COMMIT PLAN (গিট কমিট)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+H1. BACKEND COMMITS (20 commits)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  B-01  feat(backend): project init — Express + TypeScript + folder structure
+        → package.json, tsconfig.json, .gitignore, .env.example
+        → src/server.ts (app.listen), src/app.ts (middleware setup)
+        → Install: express cors cookie-parser dotenv helmet typescript tsx @types/*
+        → src/config/index.ts (export all env vars)
+        → shared/: ApiError.ts, ApiResponse.ts, catchAsync.ts, pagination.ts
+
+  B-02  feat(backend): Prisma init + PostgreSQL connection
+        → Install: prisma @prisma/client
+        → npx prisma init
+        → Set datasource to postgresql
+        → Create prisma client singleton
+        → Verify connection in server.ts startup
+
+  B-03  feat(backend): Prisma schema — User + Company + CompanyAssignment
+        → User model (all fields)
+        → Company model
+        → CompanyAssignment model (with unique constraint)
+        → Enums: UserRole, UserStatus
+        → npx prisma migrate dev --name "init-user-company"
+
+  B-04  feat(backend): Prisma schema — FinancialYear + AuditData
+        → FinancialYear model (all fields)
+        → AuditData model (JSON fields)
+        → ReviewStatus enum
+        → npx prisma migrate dev --name "add-financial-year-auditdata"
+
+  B-05  feat(backend): Prisma schema — ReviewEvent + Notification + OTP + Payment
+        → ReviewEvent model
+        → Notification model
+        → OTP model
+        → PasswordResetToken model
+        → Payment model (skeleton)
+        → ReviewEventType, NotificationType, PaymentStatus enums
+        → npx prisma migrate dev --name "add-review-notification-otp"
+
+  B-06  feat(backend): middleware — auth + role + validate + error
+        → auth.middleware.ts (Verify Better Auth session)
+        → role.middleware.ts (authorize factory function)
+        → validate.middleware.ts (Zod schema runner)
+        → error.middleware.ts (global error handler)
+
+  B-07  feat(backend): auth module — register + login
+        → auth.utils.ts (generateOTP, auth config)
+        → auth.validation.ts (registerSchema, loginSchema with Zod)
+        → auth.service.ts (register: creates user + OTP; login: validates + sets cookies)
+        → auth.controller.ts (POST /auth/register, POST /auth/login)
+        → auth.routes.ts, register in app.ts
+
+  B-08  feat(backend): auth module — logout + me + change-password
+                → POST /auth/logout (clear cookies)
+        → GET /auth/me (return current user)
+        → POST /auth/change-password
+
+  B-09  feat(backend): auth module — email verify + OTP + password reset
+        → Email service setup (nodemailer, fallback to console.log)
+        → POST /auth/verify-email
+        → POST /auth/resend-otp
+        → POST /auth/forgot-password
+        → POST /auth/reset-password
+
+  B-10  feat(backend): user module — CRUD + ban/unban + profile
+        → user.routes.ts, user.controller.ts, user.service.ts, user.validation.ts
+        → GET /users (paginated, filterable)
+        → GET /users/:id
+        → POST /users/create-user (SA only)
+        → PATCH /users/:id, /role, /ban, /unban
+        → DELETE /users/:id (soft delete)
+        → GET/PATCH /users/my-profile
+
+  B-11  feat(backend): user module — profile image upload
+        → Multer setup (diskStorage, file filter, size limit)
+        → PATCH /users/my-profile/image
+        → Serve /uploads as static
+        → Update User.profileImage URL
+
+  B-12  feat(backend): company module
+        → company.routes.ts, company.controller.ts, company.service.ts, company.validation.ts
+        → GET /companies (role-scoped)
+        → GET /companies/:id
+        → POST /companies (auto-assign creator)
+        → PATCH /companies/:id
+        → DELETE /companies/:id
+        → POST /companies/:id/assign + /unassign + GET /members
+
+  B-13  feat(backend): financial-year module
+        → financialYear.routes.ts, controller, service, validation
+        → GET/POST/PATCH/DELETE /companies/:cId/years
+        → GET /companies/:cId/years/:yId
+        → POST .../years (creates year + empty AuditData + ReviewEvent:CREATED)
+        → POST .../years/:yId/rollover (carry-forward logic)
+
+  B-14  feat(backend): rollover business logic (detailed)
+        → Implement rollover in financialYear.service.ts
+        → Copy sections: value_cy → value_py, value_cy = 0
+        → PPE: costClosing → new opening, depClosing → new depOpening
+        → bankAccounts: CY → PY, CY = 0
+        → loans + upas: CY total → PY, CY = 0
+        → shareholders, shareConfig, taxConfig: copied as-is
+        → companyName, address carried forward
+        → This must exactly replicate startNewYear() logic from useAppStore.ts
+
+  B-15  feat(backend): financial-data module
+        → financialData.routes.ts, controller, service
+        → GET /financial-data/:yearId
+        → PATCH .../audit-report-data (deep merge)
+        → PATCH .../notes-data (deep merge)
+        → PATCH .../discussion-data (merge)
+        → canEdit check: isLocked, reviewStatus, user access
+
+  B-16  feat(backend): review module
+        → review.routes.ts, controller, service, validation
+        → POST /reviews/:yearId/submit (notify admins)
+        → POST .../start-review (notify students)
+        → POST .../request-changes (notify students)
+        → POST .../finalize (lock, notify all)
+        → POST .../reopen (unlock)
+        → GET .../queue
+        → GET .../events
+
+  B-17  feat(backend): notification module
+        → notification.routes.ts, controller, service
+        → GET /notifications (paginated)
+        → PATCH /notifications/:id/read
+        → PATCH /notifications/read-all
+        → GET /notifications/unread-count
+
+  B-18  feat(backend): stats module + seed data
+        → GET /stats/admin (admin dashboard stats)
+        → GET /stats/system (SA system stats)
+        → prisma/seed.ts (create default SUPER_ADMIN with known password)
+        → npx prisma db seed
+
+  B-19  feat(backend): auth — Google OAuth
+        → GET /auth/google (redirect)
+        → GET /auth/google/callback (find/create user, set cookies)
+        → Skip if GOOGLE_CLIENT_ID not configured
+
+  B-20  feat(backend): production hardening + README
+        → Helmet.js security headers
+        → Rate limiting (express-rate-limit, 100 req/15min)
+        → Input sanitization
+        → CORS production config (whitelist FRONTEND_URL)
+        → backend/README.md (setup instructions, API overview)
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+H2. FRONTEND COMMITS (20 commits)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  F-01  feat(frontend): install new dependencies + env setup
+        → npm install axios react-hot-toast js-cookie
+        → npm install -D @types/js-cookie
+        → Create frontend/.env with VITE_API_BASE_URL
+        → Add Toaster to App.tsx (from react-hot-toast)
+
+  F-02  feat(frontend): create httpClient.ts — Axios instance + interceptors
+        → src/services/httpClient.ts
+        → Axios instance with baseURL + withCredentials: true
+        → Response interceptor: 401 → logout + redirect
+
+  F-03  feat(frontend): create auth.service.ts
+        → All auth service functions (login, register, logout, getMe, etc.)
+        → Proper error handling and message extraction
+
+  F-04  feat(frontend): upgrade AuthPage.tsx — password field + API integration
+        → Add password input (with show/hide toggle)
+        → Add confirm password for register
+        → Call authService.login / authService.register
+        → On success: set user in Zustand, navigate to /dashboard
+        → On error: show toast notification
+        → Add "Forgot Password?" link
+
+  F-05  feat(frontend): upgrade useAppStore.ts — auth state migration
+        → Remove persist for auth data (users[], currentUserId)
+        → Add currentUser: User | null (in-memory)
+        → Add isAuthChecked: boolean
+        → Login action → authService.login → setCurrentUser
+        → Register action → authService.register → setCurrentUser
+        → Logout → authService.logout → clearAuth
+        → Keep persist for: activeCompanyId, activeYearId
+
+  F-06  feat(frontend): upgrade DashboardLayout.tsx — API auth guard
+        → On mount: call authService.getMe()
+        → If success: setCurrentUser in Zustand
+        → If 401: redirect to /auth
+        → Show loading spinner during check
+        → If banned: show banned screen with message
+
+  F-07  feat(frontend): create ForgotPassword + ResetPassword + VerifyEmail
+        → src/components/auth/ForgotPassword.tsx
+           → Email input → authService.forgotPassword(email)
+           → Show success message
+        → src/components/auth/ResetPassword.tsx
+           → Read token from URL query param
+           → New password + confirm → authService.resetPassword(token, newPass)
+        → src/components/auth/VerifyEmail.tsx
+           → Read email from URL query param
+           → OTP input → authService.verifyEmail(email, otp)
+           → Resend OTP button
+        → Add routes in App.tsx:
+           /auth/forgot, /auth/reset-password, /auth/verify-email
+
+  F-08  feat(frontend): create company + financialYear services
+        → src/services/company.service.ts (all CRUD functions)
+        → src/services/financialYear.service.ts (CRUD + rollover)
+
+  F-09  feat(frontend): upgrade CompanyDashboard.tsx — API-backed
+        → On mount: fetch companies from companyService.getAll()
+        → Create company → companyService.create() → refresh list
+        → Show financial years for active company
+        → Create year → financialYearService.create()
+        → Rollover → financialYearService.rollover()
+        → Delete year → financialYearService.remove()
+        → Delete company → companyService.remove()
+        → Loading skeleton while fetching
+        → Error handling with toast
+
+  F-10  feat(frontend): create financialData service + upgrade useAuditData
+        → src/services/financialData.service.ts
+        → useAuditData.ts: on mount/yearId change → fetch full data from API
+        → Set auditData, notesData, discussionData in store
+        → Debounced save (2 seconds) for notes changes
+        → Saving indicator in UI
+
+  F-11  feat(frontend): upgrade useGlobalStoreSync — API-backed notes
+        → When notes data changes → debounced PATCH to financialData.updateNotesData
+        → Show "Saving..." indicator
+
+  F-12  feat(frontend): create review.service.ts + review UI
+        → src/services/review.service.ts
+        → CompanyDashboard: show reviewStatus badge (color-coded)
+        → Show "Submit for Review" button (STUDENT only, DRAFT/CHANGES_REQUESTED status)
+        → Show review action buttons for ADMIN/SA
+        → Lock indicator when FINALIZED
+        → Toast notification on each review action
+
+  F-13  feat(frontend): create notification.service.ts + notification UI
+        → src/services/notification.service.ts
+        → Sidebar: notification bell icon
+        → Fetch unread count on mount (poll every 30 seconds)
+        → Show badge count
+        → Click → open notification panel/dropdown
+        → Mark as read on click
+        → Mark all read button
+
+  F-14  feat(frontend): create user.service.ts
+        → src/services/user.service.ts (all user management functions)
+
+  F-15  feat(frontend): create AdminDashboard.tsx — API-backed
+        → Fetch all students: userService.getAll({ role: 'STUDENT' })
+        → Show stats (pending reviews, total students, etc.)
+        → Student list with ban/unban buttons
+        → Assignment controls (assign student to company)
+        → Review queue: reviewService.getQueue()
+        → Start review, request changes, finalize buttons
+        → Loading states + error handling
+
+  F-16  feat(frontend): create SuperAdminDashboard.tsx — API-backed
+        → Fetch all users (students + admins): userService.getAll()
+        → System stats: statsService.getSystem()
+        → Role change: userService.updateRole()
+        → Create admin: userService.createUser({ role: 'ADMIN', ... })
+        → Soft delete: userService.deleteUser()
+        → Loading states + error handling
+
+  F-17  feat(frontend): create ProfilePage.tsx
+        → src/components/dashboard/ProfilePage.tsx
+        → View current profile (name, email, role, image)
+        → Edit name form
+        → Change password form (old + new + confirm)
+        → Profile image upload (file input → FormData → userService.uploadProfileImage)
+        → Add route /dashboard/profile
+        → Add link in Sidebar under user info
+
+  F-18  feat(frontend): upgrade Sidebar.tsx — notification badge + profile link
+        → Notification bell with unread count badge
+        → Profile link to /dashboard/profile
+        → Show role badge (STUDENT/ADMIN/SUPER_ADMIN)
+        → Saving indicator for FS auto-save
+
+  F-19  feat(frontend): role-based routing + dashboard navigation
+        → DashboardLayout shows correct dashboard by role:
+          STUDENT → CompanyDashboard (company list + FS access)
+          ADMIN → AdminDashboard (review queue + student management)
+          SUPER_ADMIN → SuperAdminDashboard (system management)
+        → Routes in App.tsx updated accordingly
+        → Redirect unauthorized role access
+
+  F-20  fix(frontend): error boundaries + polish + cleanup
+        → Add React error boundary for route sections
+        → Loading skeletons where needed
+        → Toast for all API errors
+        → Remove old localStorage persist code that's no longer needed
+        → Test all happy paths and error states
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+H3. BONUS COMMITS (5+)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  X-01  feat: Google OAuth login button in AuthPage
+  X-02  feat: Review events timeline in CompanyDashboard (audit trail)
+  X-03  feat: PDF export for financial statements (window.print())
+  X-04  feat: Dashboard charts using recharts
+  X-05  feat: Real-time notifications using SSE (Server-Sent Events)
+  X-06  feat: Dark mode toggle (already has dark theme)
+  X-07  feat: Payment gateway integration (LAST PHASE — after gateway selected)
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART I — STEP-BY-STEP BUILD GUIDE (AI Prompt Ready)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+  ⚠️ HOW TO USE THIS SECTION:
+  Each step has an "AI PROMPT" you can give directly to an AI coding assistant.
+  Each step is self-contained and produces a buildable, testable state.
+  After each step → implement → test → git commit → push.
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 1: BACKEND SKELETON (B-01)
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 1.1 — Express Project Setup
+  ──────────────────────────────────
+
+  AI PROMPT:
+  """
+  Create a new Express.js + TypeScript backend project in a 'backend/' folder.
+  
+  Requirements:
+  - Folder: backend/
+  - src/server.ts: Creates HTTP server, listens on PORT from env
+  - src/app.ts: Express app setup with:
+      • helmet() for security headers
+      • cors({ origin: FRONTEND_URL, credentials: true })
+      • express.json()
+      • cookie-parser()
+      • All module routes will be mounted here later
+      • Global error handler middleware (last)
+  - backend/tsconfig.json:
+      { "compilerOptions": { "target": "ES2020", "module": "commonjs",
+        "outDir": "./dist", "rootDir": "./src", "strict": true,
+        "esModuleInterop": true, "skipLibCheck": true } }
+  - backend/package.json scripts:
+      "dev": "tsx watch src/server.ts",
+      "build": "tsc",
+      "start": "node dist/server.js"
+  - backend/.env.example with all variable keys (no values)
+  - backend/.gitignore: node_modules, .env, dist/, uploads/
+  
+  Install packages:
+  Production: express cors cookie-parser dotenv helmet
+  Dev: typescript tsx @types/express @types/cors @types/cookie-parser @types/node
+
+  Also create:
+  - src/config/index.ts: exports all env vars as typed constants
+  - src/shared/ApiError.ts: custom error class with statusCode + message + errorDetails?
+  - src/shared/ApiResponse.ts: static send() method
+  - src/shared/catchAsync.ts: wraps async route handlers
+  - src/shared/pagination.ts: takes (page?, limit?) → { skip, take, page, limit }
+  """
+
+  After: npm run dev → should show "Server running on port 5000"
+  Git: git commit -m "feat(backend): project init — Express + TypeScript setup"
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 2: DATABASE SCHEMA (B-02 to B-05)
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 2.1 — Prisma Setup
+  ─────────────────────────
+
+  AI PROMPT:
+  """
+  Add Prisma ORM to the existing backend/ project.
+  
+  1. Install: prisma @prisma/client
+  2. Run: npx prisma init
+  3. Set datasource provider to "postgresql"
+  4. DATABASE_URL comes from env
+  5. Create a Prisma client singleton in src/config/prismaClient.ts:
+     import { PrismaClient } from '@prisma/client'
+     const prisma = new PrismaClient()
+     export default prisma
+  6. In server.ts: on startup, test connection with prisma.$connect()
+     Log: "Database connected successfully" on success
+  """
+
+  STEP 2.2 — Full Schema
+  ───────────────────────
+
+  AI PROMPT:
+  """
+  Write the complete prisma/schema.prisma file for the Audit-X project.
+  
+  Models needed (with all fields exactly as described):
+  
+  1. User: id(UUID), name, email(unique), password, role(UserRole enum),
+     status(UserStatus enum), emailVerified(bool default false),
+     needPasswordChange(bool default false), profileImage(string?),
+     bannedReason(string?), bannedByUserId(string?), googleId(string? unique),
+     isDeleted(bool default false), createdAt, updatedAt
+  
+  2. Company: id(UUID), name, address(string?), createdByUserId(FK→User),
+     isDeleted(bool default false), createdAt, updatedAt
+  
+  3. CompanyAssignment: id(UUID), userId(FK→User), companyId(FK→Company),
+     assignedByUserId(FK→User), assignedAt(DateTime default now())
+     Unique constraint: [userId, companyId]
+  
+  4. FinancialYear: id(UUID), companyId(FK), year(Int), reportingDate(String),
+     reviewStatus(ReviewStatus default DRAFT), isLocked(bool default false),
+     createdByUserId(FK), currentReviewerUserId(string?),
+     finalizedByUserId(string?), finalizedAt(DateTime?), submittedAt(DateTime?),
+     lastEditedByUserId(string?), createdAt, updatedAt
+  
+  5. AuditData: id(UUID), yearId(FK→FinancialYear UNIQUE),
+     auditReportData(Json), notesData(Json), discussionData(Json),
+     updatedAt(@updatedAt)
+  
+  6. ReviewEvent: id(UUID), yearId(FK→FinancialYear), type(ReviewEventType),
+     actorUserId(FK→User), actorRole(String), note(String?), createdAt
+  
+  7. Notification: id(UUID), userId(FK→User), type(NotificationType),
+     title, message, read(bool default false),
+     relatedCompanyId(string?), relatedYearId(string?), createdAt
+  
+  8. OTP: id(UUID), email, otp, expiresAt, createdAt
+  
+  9. PasswordResetToken: id(UUID), userId(FK→User), token, expiresAt,
+     used(bool default false), createdAt
+  
+  10. Payment: id(UUID), userId, amount(Float), transactionId, status(PaymentStatus),
+      paymentMethod, createdAt
+  
+  Enums:
+  - UserRole: STUDENT, ADMIN, SUPER_ADMIN
+  - UserStatus: ACTIVE, BANNED, DELETED
+  - ReviewStatus: DRAFT, SUBMITTED, UNDER_REVIEW, CHANGES_REQUESTED, FINALIZED
+  - ReviewEventType: CREATED, SUBMITTED, UNDER_REVIEW, CHANGES_REQUESTED, FINALIZED, REOPENED
+  - NotificationType: ASSIGNMENT, UNASSIGNMENT, REVIEW_SUBMITTED, REVIEW_STARTED,
+    CHANGES_REQUESTED, FINALIZED, REOPENED, BAN, UNBAN, SYSTEM
+  - PaymentStatus: PENDING, PAID, FAILED
+  
+  After writing schema run: npx prisma migrate dev --name init
+  """
+
+  Git: git commit -m "feat(backend): Prisma schema — all models + migrations"
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 3: BACKEND AUTH (B-06 to B-09)
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 3.1 — Middleware
+  ──────────────────────
+
+  AI PROMPT:
+  """
+  Create 4 middleware files for the Audit-X Express backend:
+  
+  1. src/middleware/auth.middleware.ts:
+     - Export: authenticate
+     - Reads token from req.cookies.accessToken
+     - If no token → throw ApiError(401, "Authentication required")
+     - If invalid → throw ApiError(401, "Invalid or expired token")
+     - Query DB: prisma.user.findUnique({ where: { id: decoded.id } })
+     - If user not found or isDeleted=true → ApiError(401)
+     - If status=DELETED → ApiError(401)
+     - req.user = { id, email, role, status, emailVerified }
+     - call next()
+  
+  2. src/middleware/role.middleware.ts:
+     - Export: authorize(...allowedRoles: string[])
+     - Returns middleware that checks req.user.role
+     - If not in allowedRoles → ApiError(403, "Insufficient permissions")
+  
+  3. src/middleware/validate.middleware.ts:
+     - Export: validate(zodSchema)
+     - Runs zodSchema.safeParse(req.body)
+     - On fail → ApiError(400, "Validation failed", errorDetails array)
+     - On success → req.body = result.data; next()
+  
+  4. src/middleware/error.middleware.ts:
+     - Export: globalErrorHandler
+     - Is an Express error handler (4 params: err, req, res, next)
+     - If instanceof ApiError → send structured JSON with statusCode
+     - Else → send 500 with safe message
+  """
+
+  STEP 3.2 — Auth Module
+  ──────────────────────────────────────────────────────────────────
+
+  AI PROMPT:
+  """
+  Create the auth module for the Audit-X backend.
+  Files: src/modules/auth/auth.utils.ts, auth.validation.ts, auth.service.ts,
+         auth.controller.ts, auth.routes.ts
+
+  auth.utils.ts functions:
+  - hashPassword(password: string): Promise<string> → bcrypt.hash(password, 12)
+  - comparePassword(plain: string, hash: string): Promise<boolean>
+  - setSession(req, res): handled by Better Auth
+  - clearCookies(res): void → clear both cookies
+  - generateOTP(): string → 6-digit random number
+  - generateResetToken(): string → crypto.randomBytes(32).toString('hex')
+
+  auth.validation.ts:
+  - registerSchema: { name: min 2 chars, email: valid email, password: min 8 chars }
+  - loginSchema: { email, password }
+  - changePasswordSchema: { oldPassword, newPassword: min 8 chars }
+
+  auth.service.ts:
+  - register(name, email, password):
+      Check email not already in use
+      Hash password
+      Create User with role=STUDENT, emailVerified=false
+      Generate OTP, store in OTP table with 10-min expiry
+      Send email (or console.log if SMTP not configured)
+      Return user (without password)
+  
+  - login(email, password):
+      Find user by email, ensure not deleted
+      Compare password with bcrypt
+      If banned → still allow login (banned users can login but can't access data)
+      Create session using Better Auth
+      Set cookies
+      Return user data (without password)
+  
+  
+  
+  - logout(res): clearCookies(res)
+  
+  - getMe(userId): return full user profile
+
+  auth.controller.ts + auth.routes.ts:
+  POST /auth/register → validate(registerSchema) → register
+  POST /auth/login → validate(loginSchema) → login
+  POST /auth/logout → authenticate → logout
+  
+  GET  /auth/me → authenticate → getMe
+  POST /auth/change-password → authenticate → validate(changePasswordSchema) → changePassword
+
+  Register routes in app.ts.
+  """
+
+  STEP 3.3 — Email Verify + Password Reset
+  ─────────────────────────────────────────
+
+  AI PROMPT:
+  """
+  Add email verification and password reset to auth module.
+
+  Setup email service (src/config/mailer.ts):
+  - Use nodemailer
+  - Transport: SMTP from env vars
+  - If SMTP_HOST not set → create a console.log transport (log to terminal)
+  - Function: sendEmail({ to, subject, text, html? })
+
+  Add to auth.service.ts:
+  - verifyEmail(email, otp):
+      Find OTP record by email
+      Check not expired (expiresAt > now)
+      Compare otp
+      Update User.emailVerified = true
+      Delete OTP record
+  
+  - resendOtp(email):
+      Find user by email
+      Delete old OTP records for this email
+      Generate new OTP, save to DB
+      Send email
+  
+  - forgotPassword(email):
+      Find user (don't reveal if not found — return same response)
+      Generate reset token, hash it, save to PasswordResetToken (1 hour expiry)
+      Send email with link: FRONTEND_URL/reset-password?token=TOKEN
+  
+  - resetPassword(token, newPassword):
+      Find PasswordResetToken by token (check not used, not expired)
+      Hash new password
+      Update User.password
+      Mark token as used
+
+  Add routes:
+  POST /auth/verify-email
+  POST /auth/resend-otp
+  POST /auth/forgot-password
+  POST /auth/reset-password
+  """
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 4: CORE BACKEND MODULES (B-10 to B-18)
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 4.1 — User Module
+  ───────────────────────
+
+  AI PROMPT:
+  """
+  Create user module (src/modules/user/) for Audit-X.
+  
+  Endpoints to implement:
+  GET    /users                  → paginated, filterable by role, status, searchTerm
+  GET    /users/:id              → single user
+  POST   /users/create-user      → SA only, creates user (emailVerified=true, needPasswordChange=true)
+  PATCH  /users/:id              → update name/email
+  PATCH  /users/:id/role         → change role (SA only)
+  PATCH  /users/:id/ban          → ban (body: reason?), create BAN notification
+  PATCH  /users/:id/unban        → unban, create UNBAN notification
+  DELETE /users/:id              → soft delete (isDeleted=true, status=DELETED)
+  GET    /users/my-profile       → current user's profile
+  PATCH  /users/my-profile       → update own name
+
+  Auth: GET/PATCH/DELETE /users/* → authenticate + authorize(ADMIN, SUPER_ADMIN)
+  Exceptions: GET/PATCH /users/my-profile → authenticate (any role)
+  """
+
+  STEP 4.2 — Company Module
+  ──────────────────────────
+
+  AI PROMPT:
+  """
+  Create company module (src/modules/company/) for Audit-X.
+  
+  GET    /companies: 
+    STUDENT → only their assigned companies (via CompanyAssignment)
+    ADMIN/SA → all non-deleted companies
+    Supports: ?searchTerm= (filter by name)
+  
+  GET    /companies/:id: check user has access (assigned or ADMIN/SA)
+  
+  POST   /companies { name, address? }:
+    Create Company
+    Auto-create CompanyAssignment for creator
+    Return created company
+  
+  PATCH  /companies/:id { name?, address? }:
+    Only creator or ADMIN/SA
+  
+  DELETE /companies/:id:
+    Soft delete (isDeleted=true)
+    Only creator or ADMIN/SA
+  
+  POST /companies/:id/assign { userId }:
+    Create CompanyAssignment
+    Create ASSIGNMENT notification for student
+    Auth: ADMIN, SUPER_ADMIN
+  
+  POST /companies/:id/unassign { userId }:
+    Delete CompanyAssignment
+    Create UNASSIGNMENT notification
+    Auth: ADMIN, SUPER_ADMIN
+  
+  GET /companies/:id/members:
+    Return all users assigned to this company
+    Auth: ADMIN, SUPER_ADMIN
+  """
+
+  STEP 4.3 — Financial Year + Rollover Module
+  ─────────────────────────────────────────────
+
+  AI PROMPT:
+  """
+  Create financial-year module (src/modules/financial-year/) for Audit-X.
+  
+  Base path: /companies/:companyId/years
+  All routes need: authenticate + company access check
+  
+  Helper function checkCompanyAccess(userId, role, companyId):
+    STUDENT: check CompanyAssignment exists for userId + companyId
+    ADMIN/SA: just check company exists and not deleted
+    Throw 403 if no access
+  
+  GET    /companies/:cId/years: all years sorted by year ASC
+  GET    /companies/:cId/years/:yId: single year with auditData included
+  
+  POST   /companies/:cId/years { reportingDate }:
+    Parse year from reportingDate
+    Check year not already exists for this company
+    Create FinancialYear (status=DRAFT, isLocked=false)
+    Create AuditData with:
+      auditReportData = getDefaultAuditReportData() (empty/default JSON)
+      notesData = getDefaultNotesData() (empty/default JSON)
+      discussionData = { docStatuses: {}, values: {} }
+    Create ReviewEvent (type=CREATED)
+    Return created year
+  
+  PATCH  /companies/:cId/years/:yId { reportingDate? }:
+    Not allowed if isLocked=true
+    Update year metadata
+  
+  DELETE /companies/:cId/years/:yId:
+    Delete AuditData first (cascade may handle)
+    Delete ReviewEvents
+    Delete FinancialYear
+    Auth: creator or ADMIN/SA
+  
+  POST   /companies/:cId/years/:yId/rollover { reportingDate }:
+    Fetch source year + its AuditData
+    Implement carry-forward logic (EXACTLY as startNewYear in useAppStore.ts):
+      - sections: value_cy → value_py, value_cy = 0
+      - PPE: closing → opening, CY = 0
+      - bankAccounts: CY→PY, CY=0
+      - loans+upas: total CY → PY, CY=0
+      - shareholders, shareConfig, taxConfig: copy
+      - company name + address: copy
+    Create new FinancialYear
+    Create new AuditData with carried-forward data
+    Create ReviewEvent: CREATED
+    Return new year
+  
+  IMPORTANT: getDefaultAuditReportData() and getDefaultNotesData() must return
+  the SAME structure as getDefaultAuditData() and getDefaultNotesData() in
+  the frontend's useAppStore.ts file.
+  """
+
+  STEP 4.4 — Financial Data Module
+  ──────────────────────────────────
+
+  AI PROMPT:
+  """
+  Create financial-data module (src/modules/financial-data/) for Audit-X.
+  
+  All routes: authenticate + canEdit check
+  
+  canEdit helper(userId, role, yearId):
+    Fetch FinancialYear + Company
+    Check user has company access
+    Check: isLocked=false (or user is ADMIN/SA who can still edit)
+    Check: status not SUBMITTED or UNDER_REVIEW (unless ADMIN/SA)
+    Check: user status is ACTIVE (not banned)
+  
+  GET    /financial-data/:yearId:
+    Return full AuditData (auditReportData, notesData, discussionData)
+    Auth: authenticate + company access (not canEdit)
+  
+  PATCH  /financial-data/:yearId/audit-report-data { ...partial }:
+    Deep merge body into existing auditReportData JSON
+    Update FinancialYear.lastEditedByUserId = req.user.id
+    Auth: authenticate + canEdit
+  
+  PATCH  /financial-data/:yearId/notes-data { ...partial }:
+    Deep merge body into existing notesData JSON
+    Auth: authenticate + canEdit
+  
+  PATCH  /financial-data/:yearId/discussion-data { docStatuses?, values? }:
+    Merge into existing discussionData
+    Auth: authenticate + canEdit
+  
+  Deep merge strategy: use lodash.merge or manual deep merge
+  (arrays should be REPLACED, not merged)
+  """
+
+  STEP 4.5 — Review Module
+  ─────────────────────────
+
+  AI PROMPT:
+  """
+  Create review module (src/modules/review/) for Audit-X.
+  
+  POST /reviews/:yearId/submit (Auth: STUDENT + year access):
+    Validate: reviewStatus must be DRAFT or CHANGES_REQUESTED
+    Update: reviewStatus=SUBMITTED, submittedAt=now()
+    Create ReviewEvent: type=SUBMITTED
+    Notify: all ADMIN + SUPER_ADMIN users
+      title: "FS Submitted for Review"
+      message: "A financial statement has been submitted for review: [company name] - FY[year]"
+      type: REVIEW_SUBMITTED
+  
+  POST /reviews/:yearId/start-review (Auth: ADMIN, SA):
+    Validate: reviewStatus must be SUBMITTED
+    Update: reviewStatus=UNDER_REVIEW, currentReviewerUserId=req.user.id
+    Create ReviewEvent: type=UNDER_REVIEW
+    Notify: all students assigned to this company
+      type: REVIEW_STARTED
+  
+  POST /reviews/:yearId/request-changes { note? } (Auth: ADMIN, SA):
+    Validate: reviewStatus must be UNDER_REVIEW
+    Update: reviewStatus=CHANGES_REQUESTED
+    Create ReviewEvent: type=CHANGES_REQUESTED, note=note
+    Notify: assigned students
+      type: CHANGES_REQUESTED
+      message includes the note if provided
+  
+  POST /reviews/:yearId/finalize { note? } (Auth: ADMIN, SA):
+    Validate: reviewStatus must be UNDER_REVIEW
+    Update: reviewStatus=FINALIZED, isLocked=true, finalizedByUserId, finalizedAt=now()
+    Create ReviewEvent: type=FINALIZED
+    Notify: assigned students
+      type: FINALIZED
+  
+  POST /reviews/:yearId/reopen { note? } (Auth: ADMIN, SA):
+    Update: reviewStatus=DRAFT, isLocked=false, currentReviewerUserId=null
+    Create ReviewEvent: type=REOPENED
+  
+  GET /reviews/queue (Auth: ADMIN, SA):
+    Return FinancialYears where reviewStatus IN [SUBMITTED, UNDER_REVIEW]
+    Include: company name, year, submittedAt, currentReviewer name
+    Sort: submittedAt ASC
+  
+  GET /reviews/:yearId/events (Auth: authenticate + access):
+    Return all ReviewEvents for this year
+    Include: actor name + role
+    Sort: createdAt ASC
+  
+  Notification helper function: createNotification(prisma, { userId, type, title, message, relatedCompanyId?, relatedYearId? })
+  """
+
+  STEP 4.6 — Notification + Stats + Seed
+  ─────────────────────────────────────────
+
+  AI PROMPT:
+  """
+  Create notification module, stats module, and seed data.
+  
+  NOTIFICATION MODULE (src/modules/notification/):
+  
+  GET  /notifications (Auth: any):
+    Return current user's notifications
+    Query: ?page=1&limit=20
+    Sort: createdAt DESC
+    Return: paginated with meta
+  
+  PATCH /notifications/:id/read (Auth: any):
+    Verify notification.userId === req.user.id
+    Set read = true
+  
+  PATCH /notifications/read-all (Auth: any):
+    Update all notifications for req.user.id: read = true
+  
+  GET /notifications/unread-count (Auth: any):
+    Return count of unread notifications for current user
+    Response: { count: number }
+  
+  STATS MODULE (src/modules/stats or add to existing):
+  
+  GET /stats/admin (Auth: ADMIN, SA):
+    Return:
+      totalStudents: count(role=STUDENT, not deleted)
+      totalAdmins: count(role=ADMIN, not deleted)
+      totalCompanies: count(not deleted)
+      totalFinancialYears: count all
+      pendingReviews: count(reviewStatus=SUBMITTED)
+      activeReviews: count(reviewStatus=UNDER_REVIEW)
+      finalizedYears: count(reviewStatus=FINALIZED)
+      recentActivity: last 5 ReviewEvents with actor name
+  
+  GET /stats/system (Auth: SA):
+    Return:
+      totalUsers: count(not deleted)
+      roleBreakdown: { STUDENT: n, ADMIN: n, SUPER_ADMIN: n }
+      statusBreakdown: { ACTIVE: n, BANNED: n }
+      totalCompanies: count
+      totalYears: count
+  
+  SEED (backend/prisma/seed.ts):
+    Check if SUPER_ADMIN exists (by email: admin@audit-x.com)
+    If not → create one:
+      name: "System Administrator"
+      email: "admin@audit-x.com"
+      password: hash("Admin@123456")
+      role: SUPER_ADMIN
+      emailVerified: true
+    Log: "Seed completed"
+  
+  Add to package.json:
+  "prisma": { "seed": "tsx prisma/seed.ts" }
+  Run: npx prisma db seed
+  """
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 5: FRONTEND API LAYER (F-01 to F-05)
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 5.1 — Install + httpClient + Auth Service
+  ────────────────────────────────────────────────
+
+  AI PROMPT:
+  """
+  In the existing React + Vite frontend project:
+  
+  1. Install: npm install axios react-hot-toast js-cookie
+     npm install -D @types/js-cookie
+  
+  2. Create frontend/.env:
+     VITE_API_BASE_URL=http://localhost:5000/api/v1
+  
+  3. In App.tsx, import and add Toaster component at root level:
+     import { Toaster } from 'react-hot-toast'
+     Add <Toaster position="top-right" /> inside App component
+  
+  4. Create src/services/httpClient.ts:
+     - Axios instance with:
+         baseURL: import.meta.env.VITE_API_BASE_URL
+         withCredentials: true
+         headers: { 'Content-Type': 'application/json' }
+     - Response interceptor:
+         On success: pass through
+         On 401 error:
+           Try POST /auth/refresh-token
+           If success: retry original request
+           If refresh fails: call useAppStore.getState().clearAuth()
+                             window.location.href = '/auth'
+     - Export default instance
+  
+  5. Create src/services/auth.service.ts:
+     Import httpClient
+     Export authService object with functions:
+     - login(email, password) → httpClient.post('/auth/login', { email, password })
+     - register(name, email, password) → httpClient.post('/auth/register', ...)
+     - logout() → httpClient.post('/auth/logout')
+     - getMe() → httpClient.get('/auth/me')
+     - verifyEmail(email, otp) → httpClient.post('/auth/verify-email', ...)
+     - resendOtp(email) → httpClient.post('/auth/resend-otp', ...)
+     - forgotPassword(email) → httpClient.post('/auth/forgot-password', ...)
+     - resetPassword(token, newPassword) → httpClient.post('/auth/reset-password', ...)
+     - changePassword(oldPassword, newPassword) → httpClient.post('/auth/change-password', ...)
+     
+     Each function returns response.data (the full API response object)
+     Throw errors with message extracted from error.response.data.message
+  """
+
+  ════════════════════════════════════════════════════════════════════
+  PHASE 6-9: Remaining Frontend Steps
+  ════════════════════════════════════════════════════════════════════
+
+  STEP 6.1 — Upgrade AuthPage.tsx
+
+  AI PROMPT:
+  """
+  Update the existing AuthPage.tsx component. Keep all existing UI/styling.
+  
+  Changes:
+  1. Add password input field to login form (text type, with show/hide toggle button using Eye/EyeOff from lucide-react)
+  2. Add password + confirm password to register form
+  3. Replace store.login() → authService.login(email, password)
+     On success: get user from response.data.data.user
+                 call useAppStore.getState().setCurrentUser(user)
+                 navigate('/dashboard')
+     On error: toast.error(error.message)
+  4. Replace store.register() → authService.register(name, email, password)
+     On success: navigate('/auth/verify-email?email=' + encodeURIComponent(email))
+     On error: toast.error(error.message)
+  5. Add "Forgot Password?" link below the login form → navigate('/auth/forgot')
+  6. Add loading state: disable button + show spinner while API call is in progress
+  """
+
+  STEP 6.2 — Upgrade useAppStore.ts (Auth Migration)
+
+  AI PROMPT:
+  """
+  Update src/store/useAppStore.ts to support API-based auth.
+  
+  KEEP: Everything related to financial statement data (years, auditData, notesData)
+  KEEP: activeCompanyId, activeYearId in persist
+  KEEP: all FS-related actions (startNewYear, updateActiveYearAuditData, etc.)
+  
+  CHANGE:
+  1. Remove: users[] from persist
+  2. Remove: currentUserId from persist
+  3. Add: currentUser: User | null = null (in-memory, NOT persisted)
+  4. Add: isAuthChecked: boolean = false
+  5. Add action: setCurrentUser(user: User) → state.currentUser = user; state.isAuthChecked = true
+  6. Add action: clearAuth() → state.currentUser = null; state.isAuthChecked = true
+  7. Keep action: logout() → calls clearAuth, resets activeCompanyId + activeYearId
+  8. Remove: old login() and register() actions that used email-only
+  
+  Keep the persist key the same to avoid breaking existing data.
+  Only persist: activeCompanyId, activeYearId (add partialize option).
+  """
+
+  STEP 6.3 — Upgrade DashboardLayout.tsx + CompanyDashboard.tsx + Sidebar.tsx
+
+  AI PROMPT:
+  """
+  Update 3 dashboard components to use API data:
+  
+  1. DashboardLayout.tsx:
+     - On mount: call authService.getMe()
+     - On success: setCurrentUser(response.data.data.user)
+     - On 401: navigate('/auth', { replace: true })
+     - Show loading spinner while checking auth
+     - If currentUser.status === 'BANNED': show ban message screen instead of dashboard
+     - Route based on role: STUDENT→CompanyDashboard, ADMIN→AdminDashboard, SA→SuperAdminDashboard
+  
+  2. CompanyDashboard.tsx:
+     Keep all existing UI exactly the same.
+     Change data source:
+     - On mount: fetch companies via companyService.getAll()
+     - Store companies in local React state
+     - Create company → companyService.create(name) → refresh list
+     - Create year → financialYearService.create(activeCompanyId, reportingDate)
+     - Delete year → financialYearService.remove(activeCompanyId, yearId)
+     - Delete company → companyService.remove(companyId)
+     - Show loading skeleton (3 placeholder rows) while fetching
+     - Toast on error
+     - Use toast.success() on successful actions
+  
+  3. Sidebar.tsx:
+     - Get currentUser from useAppStore (the new currentUser field)
+     - Keep all company listing UI
+     - Add notification bell icon with unread count badge
+     - Add profile link at bottom (near user info)
+     - Keep logout button → calls authService.logout() then store.clearAuth()
+  """
+
+  STEP 6.4 — Create ForgotPassword + ResetPassword + VerifyEmail pages
+
+  AI PROMPT:
+  """
+  Create 3 new auth pages with the same dark theme styling as AuthPage.tsx:
+  
+  1. src/components/auth/ForgotPassword.tsx:
+     - Email input form
+     - On submit: authService.forgotPassword(email)
+     - On success: show success message "Check your email for reset link"
+     - On error: toast.error
+     - Back to login link
+  
+  2. src/components/auth/ResetPassword.tsx:
+     - Read 'token' from URL: new URLSearchParams(location.search).get('token')
+     - New password + confirm password inputs
+     - On submit: if passwords match → authService.resetPassword(token, newPassword)
+     - On success: toast.success + navigate('/auth')
+     - On error: toast.error
+  
+  3. src/components/auth/VerifyEmail.tsx:
+     - Read 'email' from URL query param
+     - 6-digit OTP input
+     - On submit: authService.verifyEmail(email, otp)
+     - On success: toast.success + navigate('/auth')
+     - Resend OTP button: authService.resendOtp(email)
+  
+  Add these routes to App.tsx:
+  <Route path="/auth/forgot" element={<ForgotPassword />} />
+  <Route path="/auth/reset-password" element={<ResetPassword />} />
+  <Route path="/auth/verify-email" element={<VerifyEmail />} />
+  """
+
+  STEP 6.5 — Upgrade useAuditData.ts + create financialData.service.ts
+
+  AI PROMPT:
+  """
+  Update useAuditData hook to fetch from API with debounced auto-save.
+  
+  1. Create src/services/financialData.service.ts:
+     Functions using httpClient:
+     - getFullData(yearId) → GET /financial-data/:yearId
+     - updateAuditReportData(yearId, partial) → PATCH /financial-data/:yearId/audit-report-data
+     - updateNotesData(yearId, partial) → PATCH /financial-data/:yearId/notes-data
+     - updateDiscussionData(yearId, partial) → PATCH /financial-data/:yearId/discussion-data
+  
+  2. Update src/hooks/useAuditData.ts:
+     - When activeYearId changes:
+         setIsLoading(true)
+         const result = await financialDataService.getFullData(activeYearId)
+         Set auditData in store from result.data.auditReportData
+         Set notesData in store from result.data.notesData
+         setIsLoading(false)
+     - Keep updateData function: it updates Zustand (instant) + debounced API call (2s)
+     - Return { data, updateData, isLoaded, isSaving }
+  
+  3. In useGlobalStoreSync.ts: no changes needed — it already reads from store
+  """
+
+  STEP 6.6 — Create AdminDashboard + SuperAdminDashboard + ProfilePage
+
+  AI PROMPT:
+  """
+  Create 3 new dashboard pages for Audit-X:
+  
+  1. src/services/user.service.ts - create first with all functions (getAll, ban, unban, etc.)
+  2. src/services/review.service.ts - create with all review functions
+  3. src/services/notification.service.ts
+  
+  4. src/components/dashboard/AdminDashboard.tsx:
+     - Stats cards at top (pending reviews, total students from API)
+     - Review queue table (fetch from reviewService.getQueue())
+       Actions: Start Review, Request Changes, Finalize
+     - Student management section:
+       List of students (userService.getAll({ role: 'STUDENT' }))
+       Ban/Unban buttons
+       Show ban reason
+     - Company assignment: dropdown to select company + assign student
+     - Use same dark theme as CompanyDashboard
+  
+  5. src/components/dashboard/SuperAdminDashboard.tsx:
+     - System stats (from /stats/system)
+     - All users table (students + admins)
+     - Role change dropdown per user
+     - Create admin user button + form modal
+     - Soft delete button
+  
+  6. src/components/dashboard/ProfilePage.tsx:
+     - Show avatar (initial letter or uploaded image)
+     - Edit name field
+     - Change password form (old + new + confirm)
+     - File input for profile image upload
+     - On image select: FormData → userService.uploadProfileImage(file)
+     - Route: /dashboard/profile
+  """
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART J — TESTING GUIDE
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+J1. BACKEND API TESTING (Postman / Thunder Client / curl)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Test Order (follow this sequence):
+
+  ✅ 1. Register a student
+  POST http://localhost:5000/api/v1/auth/register
+  Body: { "name": "Test Student", "email": "student@test.com", "password": "Test@123456" }
+  Expected: 201, user object returned
+
+  ✅ 2. Login as seed SUPER_ADMIN
+  POST http://localhost:5000/api/v1/auth/login
+  Body: { "email": "admin@audit-x.com", "password": "Admin@123456" }
+  Expected: 200, cookies set (check response headers for Set-Cookie)
+
+  ✅ 3. Get current user (uses cookie)
+  GET http://localhost:5000/api/v1/auth/me
+  Expected: 200, SUPER_ADMIN user data
+
+  ✅ 4. Create a company
+  POST http://localhost:5000/api/v1/companies
+  Body: { "name": "Test Company Ltd", "address": "Dhaka, Bangladesh" }
+  Expected: 201, company object
+
+  ✅ 5. Create financial year
+  POST http://localhost:5000/api/v1/companies/{companyId}/years
+  Body: { "reportingDate": "2026-06-30" }
+  Expected: 201, year + auditData created
+
+  ✅ 6. Get financial data
+  GET http://localhost:5000/api/v1/financial-data/{yearId}
+  Expected: 200, auditReportData + notesData + discussionData
+
+  ✅ 7. Update notes data
+  PATCH http://localhost:5000/api/v1/financial-data/{yearId}/notes-data
+  Body: { "company": { "companyName": "Updated Company" } }
+  Expected: 200, data saved
+
+  ✅ 8. Verify OTP (check console for OTP)
+  POST http://localhost:5000/api/v1/auth/verify-email
+  Body: { "email": "student@test.com", "otp": "XXXXXX" }
+  Expected: 200, emailVerified = true
+
+  ✅ 9. Login as student
+  POST http://localhost:5000/api/v1/auth/login
+  Body: { "email": "student@test.com", "password": "Test@123456" }
+  Expected: 200
+
+  ✅ 10. Submit for review (as student)
+  POST http://localhost:5000/api/v1/reviews/{yearId}/submit
+  Expected: 200, reviewStatus = SUBMITTED
+
+  ✅ 11. Login as admin, start review
+  POST http://localhost:5000/api/v1/reviews/{yearId}/start-review
+  Expected: 200, reviewStatus = UNDER_REVIEW
+
+  ✅ 12. Check notifications
+  GET http://localhost:5000/api/v1/notifications
+  Expected: 200, notifications for current user
+
+  ✅ 13. Check stats
+  GET http://localhost:5000/api/v1/stats/admin
+  Expected: 200, stats object
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+J2. FRONTEND INTEGRATION TESTING (Manual Browser Testing)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Test Checklist:
+  ────────────────
+
+  AUTH FLOW:
+  ☐ Register new account → OTP email sent (check console)
+  ☐ Verify email with OTP
+  ☐ Login with email + password → redirect to dashboard
+  ☐ Logout → redirect to /auth
+  ☐ Page reload → stays logged in (cookie persists)
+  ☐ Forgot password → email with link
+  ☐ Reset password with link → success
+
+  COMPANY FLOW (as student):
+  ☐ Create company → appears in sidebar
+  ☐ Rename company → sidebar updates
+  ☐ Create financial year → appears in table
+  ☐ Open financial year → navigates to /fs/cover
+  ☐ Edit Cover page → company name + dates update
+  ☐ Edit N4-13 notes → data persists (auto-saved)
+  ☐ Auto-save indicator shows "Saving..." then "Saved ✓"
+  ☐ Delete financial year → removed from table
+  ☐ Delete company → removed from sidebar
+
+  FS TABS (verify no regression):
+  ☐ Cover tab → shows/edits correctly
+  ☐ SFP tab → calculated values show
+  ☐ PNL tab → calculated values show
+  ☐ SCE tab → calculated values show
+  ☐ SCF tab → calculated values show
+  ☐ PPE tab → asset table works
+  ☐ N4-13 tab → all notes editable
+  ☐ P_Discussion tab → all 13 pages load
+
+  REVIEW FLOW:
+  ☐ Submit for review → status badge changes → notification sent
+  ☐ Login as admin → see pending review in queue
+  ☐ Start review → status = UNDER_REVIEW
+  ☐ Request changes → status = CHANGES_REQUESTED
+  ☐ Student re-edits → re-submits
+  ☐ Admin finalizes → FS locked, cannot edit
+  ☐ Admin reopens → FS unlocked
+
+  NOTIFICATIONS:
+  ☐ Bell icon shows unread count badge
+  ☐ Click bell → see notifications
+  ☐ Mark as read → badge count decreases
+
+  ADMIN DASHBOARD:
+  ☐ View stats cards
+  ☐ View review queue
+  ☐ Start review action works
+  ☐ Ban student → student sees ban message on next login
+  ☐ Unban student → student regains access
+  ☐ Assign student to company → student sees company
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART K — DEPLOYMENT GUIDE
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+K1. LOCAL DEVELOPMENT SETUP (Fresh Start)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Prerequisites:
+  → Node.js 20.x LTS (check: node --version)
+  → PostgreSQL 16.x (running locally)
+  → Git
+
+  Setup Steps:
+  ─────────────
+
+  # 1. Clone repo
+  git clone <repository-url>
+  cd audit-x
+
+  # 2. Backend setup
+  cd backend
+  npm install
+  cp .env.example .env
+  # Edit .env: set DATABASE_URL, BETTER_AUTH_SECRET
+
+  # Create PostgreSQL database
+  psql -U postgres -c "CREATE DATABASE audit_x_db;"
+
+  # Run migrations
+  npx prisma migrate dev
+
+  # Seed default admin
+  npx prisma db seed
+
+  # Start backend
+  npm run dev
+  # → Server running on http://localhost:5000
+
+  # 3. Frontend setup (new terminal)
+  cd ../frontend
+  npm install
+  cp .env.example .env
+  # .env already has: VITE_API_BASE_URL=http://localhost:5000/api/v1
+
+  # Start frontend
+  npm run dev
+  # → App running on http://localhost:5173
+
+  # 4. Login with seed account
+  Email: admin@audit-x.com
+  Password: Admin@123456
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+K2. PRODUCTION CHECKLIST
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ☐ Set securely BETTER_AUTH_SECRET
+  ☐ Set NODE_ENV=production
+  ☐ Configure real SMTP for email sending
+  ☐ Set up SSL/HTTPS
+  ☐ Configure CORS for production domain
+  ☐ Set cookie secure: true (HTTPS only) in production
+  ☐ Set up proper logging (e.g., Winston)
+  ☐ Set up database backups
+  ☐ Set up rate limiting
+  ☐ Run: npm run build in backend
+  ☐ Serve frontend with nginx or similar
+  ☐ Point frontend VITE_API_BASE_URL to production backend URL
+  ☐ Test all flows in production environment
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  PART L — PAYMENT GATEWAY (FUTURE — শেষে করবে)
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+  ⚠️ এই অংশ এখনো implement করা হবে না।
+  ⚠️ Payment gateway এখনো নির্বাচন করা হয়নি।
+  ⚠️ Database Payment model ready আছে।
+  ⚠️ Backend payment/ folder skeleton তৈরি থাকবে।
+
+  Options:
+  ─────────
+  1. SSLCommerz (বাংলাদেশের সবচেয়ে জনপ্রিয়)
+     → npm install sslcommerz-lts
+  2. bKash (Mobile banking)
+     → bKash merchant API
+  3. Stripe (International)
+     → npm install stripe
+
+  Future Implementation Steps (যখন ready হবে):
+  ──────────────────────────────────────────────
+  Step 1: Gateway নির্বাচন করো
+  Step 2: Merchant account তৈরি করো
+  Step 3: API keys পাও → .env-এ add করো
+  Step 4: payment.service.ts implement করো:
+          initiate(userId, amount) → call gateway API → return payment URL
+          handleCallback(gatewayData) → verify → update Payment status
+  Step 5: payment.controller.ts implement করো
+  Step 6: Frontend-এ payment button + redirect যোগ করো
+  Step 7: Webhook endpoint handle করো (gateway-এর callback)
+  Step 8: Payment confirmation email পাঠাও
+  Step 9: Admin payment list UI তৈরি করো
+
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+══  QUICK REFERENCE CARD
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+
+  Project:         Audit-X — Financial Auditing Platform
+  Backend URL:     http://localhost:5000/api/v1
+  Frontend URL:    http://localhost:5173
+  Default Login:   admin@audit-x.com / Admin@123456
+
+  Backend Stack:   Express + TypeScript + PostgreSQL + Prisma + Better Auth
+  Frontend Stack:  React 19 + Vite 6 + TypeScript + TailwindCSS 4 + Zustand
+
+  Total Backend Commits:   20
+  Total Frontend Commits:  20
+  Total Bonus Commits:      7+
+  Total API Endpoints:     55+
+  Total DB Models:         10
+  Total Enums:              6
+
+  Roles:           STUDENT | ADMIN | SUPER_ADMIN
+  Review States:   DRAFT → SUBMITTED → UNDER_REVIEW → CHANGES_REQUESTED | FINALIZED
+  User States:     ACTIVE | BANNED | DELETED
+
+  ⚠️ CRITICAL RULES:
+  1. Financial Statement tabs (SFP, PNL, SCE, SCF, PPE, N4-13, P_Discussion) — DO NOT MODIFY
+  2. N4_13 calculation engine (recalculate.ts) — DO NOT MODIFY
+  3. PPE auto-depreciation logic — DO NOT MODIFY
+  4. Landing page components — DO NOT MODIFY
+  5. types.ts (Tab, AssetRow, PPEData, AuditReportData) — DO NOT MODIFY
+  6. Cookies must be httpOnly — tokens never stored in localStorage by frontend
+  7. withCredentials: true required in Axios for cookie-based auth
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+  END OF DOCUMENTATION
+  Audit-X Full-Stack Developer Reference v3.0 | April 2026
+══════════════════════════════════════════════════════════════════════════════════════════════════════
