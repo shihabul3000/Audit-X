@@ -83,15 +83,16 @@ export interface FinancialYear {
 }
 
 export interface AppState {
-  users: User[];
-  companies: Company[];
-  currentUserId: string | null;
+  users: User[]; // Will be deprecated once user.service handles UI list
+  companies: Company[]; // Will be deprecated once company.service handles UI list
+  currentUser: User | null;
+  isAuthChecked: boolean;
   activeCompanyId: string | null;
   activeYearId: string | null;
 
-  login: (email: string) => void;
-  register: (name: string, email: string) => void;
-  logout: () => void;
+  setCurrentUser: (user: User) => void;
+  clearAuth: () => void;
+  logout: () => Promise<void>;
 
   createCompany: (name: string) => void;
   updateCompany: (id: string, newName: string) => void;
@@ -191,11 +192,11 @@ export const getDefaultNotesData = (): N4_13_State => {
 };
 
 export const authSelectors = {
-  getCurrentUser: (state: AppState) => state.users.find(u => u.id === state.currentUserId) || null,
+  getCurrentUser: (state: AppState) => state.currentUser,
   isBanned: (user: User | null) => user?.status === 'banned',
-  isSuperAdmin: (user: User | null) => user?.role === 'super_admin',
-  isAdmin: (user: User | null) => user?.role === 'admin',
-  isStudent: (user: User | null) => !user || user.role === 'student',
+  isSuperAdmin: (user: User | null) => user?.role === 'SUPER_ADMIN' || user?.role === 'super_admin',
+  isAdmin: (user: User | null) => user?.role === 'ADMIN' || user?.role === 'admin',
+  isStudent: (user: User | null) => !user || user.role === 'STUDENT' || user.role === 'student',
 };
 
 export const permissionSelectors = {
@@ -230,65 +231,40 @@ export const useAppStore = create<AppState>()(
     immer((set, get) => ({
       users: [],
       companies: [],
-      currentUserId: null,
+      currentUser: null,
+      isAuthChecked: false,
       activeCompanyId: null,
       activeYearId: null,
 
-      login: (email: string) => set(state => {
-        // --- DUMMY ACCOUNT AUTO-CREATION FOR TESTING ---
-        const dummyAccounts = [
-          { email: 'super@test.com', name: 'Super Admin', role: 'super_admin' as const },
-          { email: 'admin@test.com', name: 'Test Admin', role: 'admin' as const },
-          { email: 'student@test.com', name: 'Test Student', role: 'student' as const }
-        ];
+      setCurrentUser: (user: User) => set(state => {
+        state.currentUser = user;
+        state.isAuthChecked = true;
+      }),
 
-        dummyAccounts.forEach(dummy => {
-           if (email === dummy.email && !state.users.some(u => u.email === dummy.email)) {
-             state.users.push({
-               id: uuidv4(), name: dummy.name, email: dummy.email, role: dummy.role,
-               status: 'active', assignedCompanyIds: [], notifications: []
-             });
-           }
-        });
-        // -----------------------------------------------
+      clearAuth: () => set(state => {
+        state.currentUser = null;
+        state.isAuthChecked = true;
+        state.activeCompanyId = null;
+        state.activeYearId = null;
+      }),
 
-        const user = state.users.find(u => u.email === email && u.status !== 'deleted');
-        if (user) {
-          state.currentUserId = user.id;
+      logout: async () => {
+        try {
+          const { authService } = await import('../services/auth.service');
+          await authService.logout();
+        } catch (e) {
+          // Ignore logout API failures
+        }
+        set(state => {
+          state.currentUser = null;
+          state.isAuthChecked = true;
           state.activeCompanyId = null;
           state.activeYearId = null;
-        } else {
-          throw new Error('User not found or deleted');
-        }
-      }),
-
-      register: (name: string, email: string) => set(state => {
-        if (state.users.some(u => u.email === email && u.status !== 'deleted')) {
-          throw new Error('User already exists');
-        }
-        const newUser: User = { 
-          id: uuidv4(), 
-          name, 
-          email, 
-          role: 'student',
-          status: 'active',
-          assignedCompanyIds: [],
-          notifications: []
-        };
-        state.users.push(newUser);
-        state.currentUserId = newUser.id;
-        state.activeCompanyId = null;
-        state.activeYearId = null;
-      }),
-
-      logout: () => set(state => {
-        state.currentUserId = null;
-        state.activeCompanyId = null;
-        state.activeYearId = null;
-      }),
+        });
+      },
 
       createCompany: (name: string) => set(state => {
-        const { currentUserId } = state;
+        const currentUserId = state.currentUser?.id;
         if (!currentUserId) return;
         
         const newCompany: Company = {
@@ -321,7 +297,8 @@ export const useAppStore = create<AppState>()(
       }),
 
       startNewYear: (reportingDate: string) => set(state => {
-        const { currentUserId, activeCompanyId } = state;
+        const currentUserId = state.currentUser?.id;
+        const { activeCompanyId } = state;
         if (!currentUserId || !activeCompanyId) throw new Error('No active company');
 
         const company = state.companies.find(c => c.id === activeCompanyId);
@@ -506,7 +483,7 @@ export const useAppStore = create<AppState>()(
         const year = company?.financialYears.find(y => y.id === state.activeYearId);
         if (year) {
           updater(year.data.auditData);
-          year.lastEditedByUserId = state.currentUserId;
+          year.lastEditedByUserId = state.currentUser?.id;
         }
       }),
 
@@ -516,7 +493,7 @@ export const useAppStore = create<AppState>()(
         if (year) {
           updater(year.data.notesData);
           recalculate(year.data.notesData); 
-          year.lastEditedByUserId = state.currentUserId;
+          year.lastEditedByUserId = state.currentUser?.id;
         }
       }),
 
@@ -542,7 +519,7 @@ export const useAppStore = create<AppState>()(
         if (user) {
            user.status = 'banned';
            user.bannedReason = reason;
-           user.bannedByUserId = state.currentUserId || undefined;
+           user.bannedByUserId = state.currentUser?.id || undefined;
         }
       }),
 
@@ -596,7 +573,7 @@ export const useAppStore = create<AppState>()(
            year.submittedAt = new Date().toISOString();
            year.reviewEvents.push({
              id: uuidv4(), type: 'submitted',
-             actorUserId: state.currentUserId!, actorRole: 'student',
+             actorUserId: state.currentUser?.id!, actorRole: 'student',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -607,10 +584,10 @@ export const useAppStore = create<AppState>()(
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
            year.reviewStatus = 'under_review';
-           year.currentReviewerUserId = state.currentUserId;
+           year.currentReviewerUserId = state.currentUser?.id;
            year.reviewEvents.push({
              id: uuidv4(), type: 'under_review',
-             actorUserId: state.currentUserId!, actorRole: 'admin',
+             actorUserId: state.currentUser?.id!, actorRole: 'admin',
              createdAt: new Date().toISOString()
            });
          }
@@ -623,7 +600,7 @@ export const useAppStore = create<AppState>()(
            year.reviewStatus = 'changes_requested';
            year.reviewEvents.push({
              id: uuidv4(), type: 'changes_requested',
-             actorUserId: state.currentUserId!, actorRole: 'admin',
+             actorUserId: state.currentUser?.id!, actorRole: 'admin',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -637,10 +614,10 @@ export const useAppStore = create<AppState>()(
            year.isLocked = true;
            year.status = 'completed'; // Compat
            year.finalizedAt = new Date().toISOString();
-           year.finalizedByUserId = state.currentUserId;
+           year.finalizedByUserId = state.currentUser?.id;
            year.reviewEvents.push({
              id: uuidv4(), type: 'finalized',
-             actorUserId: state.currentUserId!, actorRole: 'admin',
+             actorUserId: state.currentUser?.id!, actorRole: 'admin',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -657,14 +634,14 @@ export const useAppStore = create<AppState>()(
            year.finalizedByUserId = null;
            year.reviewEvents.push({
              id: uuidv4(), type: 'reopened',
-             actorUserId: state.currentUserId!, actorRole: 'admin',
+             actorUserId: state.currentUser?.id!, actorRole: 'admin',
              createdAt: new Date().toISOString(), note
            });
          }
       }),
 
       markNotificationRead: (notificationId) => set(state => {
-         const user = state.users.find(u => u.id === state.currentUserId);
+         const user = state.users.find(u => u.id === state.currentUser?.id);
          if (user) {
             const notif = user.notifications.find(n => n.id === notificationId);
             if (notif) notif.read = true;
@@ -686,7 +663,12 @@ export const useAppStore = create<AppState>()(
     })),
     {
       name: 'audit-x-platform-storage',
-      version: 1,
+      version: 2,
+      partialize: (state) => ({ 
+        activeCompanyId: state.activeCompanyId,
+        activeYearId: state.activeYearId
+        // Do NOT persist currentUser (session cookie handles this) or isAuthChecked
+      }),
       migrate: (persistedState: any, version: number) => {
         if (version === 0 || !version) {
           const oldUsers = persistedState.users || [];
