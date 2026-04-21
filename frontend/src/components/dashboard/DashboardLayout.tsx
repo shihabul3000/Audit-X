@@ -9,6 +9,7 @@ export const DashboardLayout: React.FC = () => {
   const isAuthChecked = useAppStore(state => state.isAuthChecked);
   const setCurrentUser = useAppStore(state => state.setCurrentUser);
   const clearAuth = useAppStore(state => state.clearAuth);
+  const fetchCompanies = useAppStore(state => state.fetchCompanies);
   const location = useLocation();
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export const DashboardLayout: React.FC = () => {
         const response = await authService.getMe();
         if (mounted) {
           setCurrentUser(response.data);
+          fetchCompanies();
         }
       } catch (error) {
         if (mounted) {

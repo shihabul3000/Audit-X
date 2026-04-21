@@ -93,6 +93,8 @@ export interface AppState {
   setCurrentUser: (user: User) => void;
   clearAuth: () => void;
   logout: () => Promise<void>;
+  
+  fetchCompanies: () => Promise<void>;
 
   createCompany: (name: string) => void;
   updateCompany: (id: string, newName: string) => void;
@@ -261,6 +263,18 @@ export const useAppStore = create<AppState>()(
           state.activeCompanyId = null;
           state.activeYearId = null;
         });
+      },
+
+      fetchCompanies: async () => {
+        try {
+          const { companyService } = await import('../services/company.service');
+          const response = await companyService.getAll();
+          set(state => {
+            state.companies = response.data.data;
+          });
+        } catch (error) {
+          console.error("Failed to fetch companies:", error);
+        }
       },
 
       createCompany: (name: string) => set(state => {
