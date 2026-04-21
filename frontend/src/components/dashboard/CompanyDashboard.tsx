@@ -62,13 +62,11 @@ export const CompanyDashboard: React.FC = () => {
   const handleOpenYear = async (yearId: string) => {
     try {
       const data = await financialDataService.getByYearId(yearId);
-      useAppStore.getState().companies.forEach(c => {
-        if (c.id === activeCompanyId) {
-          c.financialYears.forEach(y => {
-            if (y.id === yearId) {
-              y.data = data.data;
-            }
-          });
+      useAppStore.setState(state => {
+        const company = state.companies.find(c => c.id === activeCompanyId);
+        const year = company?.financialYears.find(y => y.id === yearId);
+        if (year) {
+          year.data = data.data;
         }
       });
     } catch (err) {

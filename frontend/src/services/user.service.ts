@@ -15,8 +15,12 @@ export const userService = {
     return httpClient.post(`${API_URL}/admin`, data);
   },
 
-  updateStatus: async (id: string, status: string, reason?: string) => {
-    return httpClient.patch(`${API_URL}/${id}/status`, { status, reason });
+  ban: async (id: string, reason?: string) => {
+    return httpClient.patch(`${API_URL}/${id}/ban`, { reason });
+  },
+
+  unban: async (id: string) => {
+    return httpClient.patch(`${API_URL}/${id}/unban`);
   },
 
   delete: async (id: string) => {

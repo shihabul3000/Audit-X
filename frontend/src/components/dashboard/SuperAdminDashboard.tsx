@@ -28,7 +28,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const handleBan = async (userId: string) => {
     try {
-      await userService.updateStatus(userId, 'BANNED', 'Policy violation');
+      await userService.ban(userId, 'Policy violation');
       toast.success('User banned');
       fetchUsers();
     } catch (err: any) {
@@ -38,7 +38,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const handleUnban = async (userId: string) => {
     try {
-      await userService.updateStatus(userId, 'ACTIVE');
+      await userService.unban(userId);
       toast.success('User unbanned');
       fetchUsers();
     } catch (err: any) {

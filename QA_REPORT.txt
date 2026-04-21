@@ -1,385 +1,531 @@
 ================================================================================
-  AUDIT-X PLATFORM — QA REPORT v2 (POST-FIX RE-ANALYSIS)
+  AUDIT-X — FULL PROJECT QA REPORT (FINAL)
   Date: April 21, 2026
-  Engineer: Kiro QA
-  TypeScript Build: PASS (backend 0 errors, frontend 0 errors)
-  Scope: Full-stack — Node/Express/Prisma backend + React/Vite/Zustand frontend
+  Analysis: Complete code review + live server testing
+  Backend: http://localhost:5000  STATUS: RUNNING
+  Frontend: http://localhost:3000 STATUS: RUNNING
+  TypeScript Build: PASS (0 errors on both projects)
 ================================================================================
 
-CHANGES SINCE v1 REPORT
-------------------------
-The following issues from v1 were FIXED and VERIFIED:
-  [FIXED] BUG-01  server.ts prisma default vs named import
-  [FIXED] BUG-02  financialData.service.ts wrong PATCH endpoint paths
-  [FIXED] BUG-03  review.service.ts wrong endpoint names (/pending, /start)
-  [FIXED] BUG-04  company.service.ts PUT -> PATCH
-  [FIXED] BUG-05  CompanyDashboard response.data -> response.data.data
-  [FIXED] SEC-03  logout now invalidates Better Auth session server-side
-  [FIXED] QUALITY-06 trustedOrigins now points to FRONTEND_URL
-  [FIXED] API-01  DashboardLayout setCurrentUser now maps assignedCompanyIds/notifications
-  [FIXED] API-02  fetchCompanies now initializes financialYears: []
-  [FIXED] LOGIC-02 useGlobalStoreSync infinite loop (store methods removed from deps)
-  [FIXED] LOGIC-05 OTP expiry now filtered in DB query
-  [FIXED] LOGIC-06 reopen() now guards against reopening a DRAFT year
-  [FIXED] LOGIC-03 year update now checks for duplicate year number conflict
-  [FIXED] QUALITY-08 financial year delete now wrapped in $transaction
+LIVE TEST RESULTS SUMMARY
+--------------------------
+  GET  /health                          200 OK      PASS
+  POST /api/v1/auth/login (valid)       200 OK      PASS
+  POST /api/v1/auth/login (invalid)     401         PASS
+  POST /api/v1/auth/register (bad data) 400 + errors PASS
+  GET  /api/v1/auth/me (no cookie)      401         PASS
+  GET  /api/v1/companies (no cookie)    401         PASS
+  GET  /api/v1/users (no cookie)        401         PASS
+  GET  /api/v1/nonexistent              404         PASS
+  Login Set-Cookie header               MISSING     FAIL ← CRITICAL
 
 ================================================================================
-REMAINING OPEN ISSUES (14 total)
+PROBLEM 1 — CRITICAL: Login never sets a session cookie
 ================================================================================
 
-------------------------------------------------------------------------
-SECTION A — CRITICAL / HIGH (will cause visible failures in production)
-------------------------------------------------------------------------
+WHAT IS HAPPENING:
+  When a user logs in via POST /api/v1/auth/login, the response returns
+  HTTP 200 with the user data, but NO Set-Cookie header is included.
+  This means the browser never receives a session cookie.
 
-[ISSUE-01] SEVERITY: CRITICAL
-Category: Workflow Bug
-File: frontend/src/components/dashboard/CompanyDashboard.tsx
-Title: Admin "Approve & Lock" will always fail with 400 from backend
+  Every subsequent authenticated request (GET /auth/me, GET /companies,
+  etc.) requires the Better Auth session cookie. Without it, every
+  protected endpoint returns 401 "Authentication required".
 
-Detail:
-  The CompanyDashboard shows "Approve & Lock" for years with status
-  SUBMITTED or UNDER_REVIEW. However the backend finalize() service
-  enforces: reviewStatus MUST be "UNDER_REVIEW" to finalize.
-  If an admin clicks "Approve & Lock" on a SUBMITTED year (which has
-  not yet been moved to UNDER_REVIEW), the backend returns:
-    400 Bad Request: "Can only finalize years under review"
-  Similarly, "Request Revisions" also requires UNDER_REVIEW status.
-  There is no "Start Review" button in the UI to transition
-  SUBMITTED -> UNDER_REVIEW first.
+  Result: After login, the user is redirected to /dashboard, which
+  immediately calls GET /auth/me, gets a 401, calls clearAuth(), and
+  redirects back to /auth. The user is stuck in a login loop and
+  CANNOT access the dashboard at all.
 
-Fix: Add a "Start Review" button for SUBMITTED years:
-  {fy.reviewStatus === 'SUBMITTED' && !fy.isLocked && (
-    <button onClick={() => startReview(fy.id)}>
-      Start Review
-    </button>
-  )}
-  And add the handler:
-  const startReview = async (yearId: string) => {
-    await reviewService.startReview(yearId);
-    loadFinancialYears();
-  };
+WHY IT HAPPENS:
+  The login flow has two separate auth systems that are not synchronized:
 
-------------------------------------------------------------------------
+  System 1 — Custom auth (backend/src/modules/auth/auth.service.ts):
+    - Validates email/password against the custom `users` table
+    - Returns user data on success
+    - Does NOT create any session
 
-[ISSUE-02] SEVERITY: HIGH
-Category: Security
-File: backend/.env (committed to repository)
-Title: Real production credentials exposed in source control
+  System 2 — Better Auth (auth.utils.ts):
+    - Manages sessions in the `session` table
+    - Issues the session cookie via auth.api.signInEmail()
+    - Requires the user to also exist in the `account` table
 
-Detail:
-  The backend/.env file contains live credentials:
-  - PostgreSQL connection string with password (Neon cloud DB)
+  The problem: Users created via the custom register endpoint are only
+  written to the `users` table. They are NOT written to Better Auth's
+  `account` table. So when login calls auth.api.signInEmail(), Better
+  Auth says "Credential account not found" and throws an error.
+
+  The current code wraps this in try/catch and silently ignores the
+  failure — so login "succeeds" but no cookie is ever set.
+
+  The seeded admin (admin@audit-x.com) also has no account record,
+  which is why even the admin cannot log in properly.
+
+WHERE TO FIX:
+  File: backend/src/modules/auth/auth.service.ts — register()
+  The register function now creates an account record (this was added
+  recently), but existing users (including the seeded admin) have no
+  account record. You need to:
+
+  Option A (Recommended): During login, if Better Auth signInEmail fails,
+  create the account record on-the-fly and retry:
+
+    // In auth.controller.ts login(), replace the try/catch block with:
+    try {
+      const session = await auth.api.signInEmail({ body: { email, password } });
+      // forward cookie...
+    } catch {
+      // Account record missing — create it and retry once
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) {
+        await prisma.account.upsert({
+          where: { id: `acc_${user.id}` },
+          create: {
+            id: `acc_${user.id}`,
+            accountId: user.id,
+            providerId: "email",
+            userId: user.id,
+            password: user.password, // already hashed
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          update: {},
+        });
+        try {
+          const session2 = await auth.api.signInEmail({ body: { email, password } });
+          // forward cookie...
+        } catch { /* still fails, proceed without cookie */ }
+      }
+    }
+
+  Option B: Migrate all existing users — run a one-time script to create
+  account records for all users that don't have one.
+
+  Option C: Replace Better Auth session management entirely with a custom
+  JWT/cookie approach (larger refactor).
+
+HOW TO VERIFY THE FIX:
+  After fixing, the login response headers should include:
+    Set-Cookie: better-auth.session_token=...; Path=/; HttpOnly; SameSite=Lax
+
+================================================================================
+PROBLEM 2 — CRITICAL: Frontend port mismatch breaks CORS
+================================================================================
+
+WHAT IS HAPPENING:
+  The frontend is configured to run on port 3000 (package.json: "vite --port=3000").
+  The backend CORS is configured to allow origin http://localhost:3000 (backend/.env).
+  This part is correct.
+
+  HOWEVER: When port 3000 is already occupied (e.g., from a previous session),
+  Vite automatically picks the next available port (3001, 3002, etc.).
+  The new process output shows: "Local: http://localhost:3001/"
+
+  When the frontend runs on port 3001, all API requests are blocked by CORS
+  because the backend only allows http://localhost:3000.
+  The browser will show: "CORS policy: No 'Access-Control-Allow-Origin' header"
+
+WHERE TO FIX:
+  1. Always kill old processes before starting new ones:
+     Run: npx kill-port 3000 3001 5000 (or use Task Manager)
+
+  2. Or make CORS more flexible in development:
+     File: backend/src/app.ts
+     Change:
+       origin: config.FRONTEND_URL,
+     To:
+       origin: (origin, callback) => {
+         const allowed = [config.FRONTEND_URL, 'http://localhost:3001'];
+         if (!origin || allowed.includes(origin)) callback(null, true);
+         else callback(new Error('Not allowed by CORS'));
+       },
+
+================================================================================
+PROBLEM 3 — CRITICAL: /auth/me endpoint requires Better Auth session
+================================================================================
+
+WHAT IS HAPPENING:
+  The authenticate middleware (auth.middleware.ts) calls:
+    auth.api.getSession({ headers: req.headers })
+  This looks for the Better Auth session cookie in the request headers.
+
+  Since login never sets the cookie (Problem 1), getSession() always
+  returns null, and every protected endpoint returns 401.
+
+  This means: companies, financial years, users, notifications, stats —
+  ALL return 401 for ALL users until Problem 1 is fixed.
+
+  This is a downstream consequence of Problem 1. Fix Problem 1 first.
+
+================================================================================
+PROBLEM 4 — HIGH: userService.updateStatus() calls a non-existent endpoint
+================================================================================
+
+WHAT IS HAPPENING:
+  File: frontend/src/services/user.service.ts
+  The updateStatus function calls:
+    PATCH /users/:id/status
+
+  But the backend user routes (user.routes.ts) has NO such endpoint.
+  The backend has:
+    PATCH /users/:id/ban    (to ban a user)
+    PATCH /users/:id/unban  (to unban a user)
+
+  So when SuperAdminDashboard calls handleBan() or handleUnban(), which
+  both call userService.updateStatus(), the request hits a 404.
+  The ban/unban buttons in the admin panel DO NOTHING.
+
+WHERE TO FIX:
+  File: frontend/src/services/user.service.ts
+  Change updateStatus to two separate functions:
+
+    ban: async (id: string, reason?: string) => {
+      return httpClient.patch(`${API_URL}/${id}/ban`, { reason });
+    },
+    unban: async (id: string) => {
+      return httpClient.patch(`${API_URL}/${id}/unban`);
+    },
+
+  File: frontend/src/components/dashboard/SuperAdminDashboard.tsx
+  Update handleBan and handleUnban to call the correct functions:
+    handleBan:   await userService.ban(userId, 'Policy violation');
+    handleUnban: await userService.unban(userId);
+
+================================================================================
+PROBLEM 5 — HIGH: userService.createStudent/createAdmin call non-existent endpoints
+================================================================================
+
+WHAT IS HAPPENING:
+  File: frontend/src/services/user.service.ts
+  These functions call:
+    POST /users/student
+    POST /users/admin
+
+  The backend has NO such routes. The backend only has:
+    POST /users/create-user  (requires SUPER_ADMIN role)
+
+  These functions are defined but never called in the current UI, so
+  this is a latent bug. If anyone tries to use them, they get 404.
+
+WHERE TO FIX:
+  File: frontend/src/services/user.service.ts
+  Replace createStudent and createAdmin with:
+    createUser: async (data: { name: string; email: string; password: string; role: string }) => {
+      return httpClient.post(`${API_URL}/create-user`, data);
+    },
+
+================================================================================
+PROBLEM 6 — HIGH: Opening a financial year shows blank/default data
+================================================================================
+
+WHAT IS HAPPENING:
+  When a user clicks "Continue" or "View" on a financial year in
+  CompanyDashboard, handleOpenYear() is called. It:
+  1. Tries to fetch data via financialDataService.getByYearId(yearId)
+  2. Tries to mutate the Zustand store directly via useAppStore.getState()
+  3. Navigates to /fs/cover
+
+  There are two problems here:
+
+  Problem 6a — Direct store mutation is wrong:
+    The code does:
+      useAppStore.getState().companies.forEach(c => { ... c.financialYears.forEach(y => { y.data = data.data; }) })
+    This directly mutates the Zustand state object WITHOUT going through
+    the immer set() function. Immer requires all mutations to go through
+    the set() callback. Direct mutation bypasses reactivity — the UI
+    will NOT re-render with the new data.
+
+  Problem 6b — Wrong data shape:
+    The API returns: { auditReportData, notesData, discussionData }
+    The store's FinancialYear.data expects: { auditData, notesData }
+    So y.data = data.data assigns the wrong shape, and auditData will
+    be undefined when the /fs/cover page tries to read it.
+
+  Result: The audit report editor opens with blank/default data instead
+  of the saved data from the database.
+
+WHERE TO FIX:
+  File: frontend/src/store/useAppStore.ts
+  Add a new action to properly load year data:
+
+    loadYearData: (yearId: string, auditData: AuditReportData, notesData: N4_13_State) =>
+      set(state => {
+        const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
+        const year = company?.financialYears.find(y => y.id === yearId);
+        if (year) {
+          year.data = { auditData, notesData };
+        }
+      }),
+
+  File: frontend/src/components/dashboard/CompanyDashboard.tsx
+  Update handleOpenYear to use the new action:
+
+    const handleOpenYear = async (yearId: string) => {
+      try {
+        const res = await financialDataService.getByYearId(yearId);
+        useAppStore.getState().loadYearData(
+          yearId,
+          res.data.auditReportData,
+          res.data.notesData
+        );
+      } catch (err) {
+        console.error('Failed to load year data:', err);
+      }
+      setActiveYearId(yearId);
+      navigate('/fs/cover');
+    };
+
+================================================================================
+PROBLEM 7 — HIGH: Prisma schema missing url field — migrations broken
+================================================================================
+
+WHAT IS HAPPENING:
+  File: backend/prisma/schema.prisma
+  The datasource block is:
+    datasource db {
+      provider = "postgresql"
+    }
+  There is no `url` field.
+
+  Running any Prisma CLI command will fail:
+    npx prisma migrate dev    → Error: datasource url is required
+    npx prisma db push        → Error: datasource url is required
+    npx prisma studio         → Error: datasource url is required
+    npx prisma generate       → Works (doesn't need url)
+
+  This means the team cannot run database migrations or use Prisma Studio
+  for debugging. Any new developer setting up the project cannot migrate.
+
+WHERE TO FIX:
+  File: backend/prisma/schema.prisma
+  Change:
+    datasource db {
+      provider = "postgresql"
+    }
+  To:
+    datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL")
+    }
+
+================================================================================
+PROBLEM 8 — HIGH: Exposed credentials in .env file
+================================================================================
+
+WHAT IS HAPPENING:
+  File: backend/.env
+  The following real, active credentials are in this file:
+  - PostgreSQL connection string with password (Neon cloud database)
   - Google OAuth client ID and secret
-  - Gmail SMTP app passwords (two sets)
+  - Gmail SMTP app passwords (two different sets)
   - Better Auth secret key
-  These are real, active credentials visible to anyone with repo access.
-  The .env is listed in .gitignore but the file exists on disk — if it
-  was ever committed to git history, it is permanently exposed.
 
-Fix (immediate):
-  1. Rotate ALL credentials listed above immediately.
-  2. Run: git filter-repo or BFG Repo Cleaner to purge from git history.
-  3. Verify .gitignore is working: git check-ignore -v backend/.env
+  If this file was ever committed to git, these credentials are
+  permanently in git history and must be rotated immediately.
 
-------------------------------------------------------------------------
+WHERE TO FIX:
+  1. Check git history: git log --all --full-history -- backend/.env
+  2. If committed: rotate ALL credentials immediately
+  3. Use BFG Repo Cleaner to purge from history
+  4. Verify .gitignore is working: git check-ignore -v backend/.env
 
-[ISSUE-03] SEVERITY: HIGH
-Category: Security
-File: backend/prisma/seed.ts (line 18)
-Title: Default Super Admin password hardcoded in source code
+================================================================================
+PROBLEM 9 — MEDIUM: Frontend runs on wrong port after restart
+================================================================================
 
-Detail:
-  const hashedPassword = await bcrypt.hash('Admin@123456', 12);
-  Anyone with repo access knows the default admin password.
-  If the seed is run on a production database without changing this,
-  the Super Admin account is trivially compromised.
+WHAT IS HAPPENING:
+  The frontend package.json configures: "vite --port=3000 --host=0.0.0.0"
+  The backend CORS allows: http://localhost:3000
 
-Fix:
-  Read from environment variable:
-  const password = process.env.SEED_ADMIN_PASSWORD;
-  if (!password) throw new Error('Set SEED_ADMIN_PASSWORD env var');
-  const hashedPassword = await bcrypt.hash(password, 12);
+  When port 3000 is already in use, Vite silently picks port 3001.
+  The frontend then runs on 3001 but the backend CORS only allows 3000.
+  All API requests fail with CORS errors in the browser.
 
-------------------------------------------------------------------------
+  This is a development workflow issue that will confuse developers.
 
-[ISSUE-04] SEVERITY: HIGH
-Category: Logic Bug
-File: frontend/src/components/dashboard/AdminDashboard.tsx
-Title: Admin dashboard reads from local Zustand store, not the API
+WHERE TO FIX:
+  Add --strictPort to vite command so it fails loudly instead of
+  silently switching ports:
+  File: frontend/package.json
+  Change: "vite --port=3000 --host=0.0.0.0"
+  To:     "vite --port=3000 --host=0.0.0.0 --strictPort"
 
-Detail:
-  AdminDashboard reads: const users = useAppStore(state => state.users)
-  The store's users[] array is NEVER populated from the API. It starts
-  empty and is only populated by the deprecated local createUser() action.
-  Result: The admin dashboard always shows "No students found" even when
-  students exist in the database.
-  Same issue in SuperAdminDashboard.tsx — it also reads state.users.
+  This way, if port 3000 is busy, the dev server fails with a clear
+  error instead of silently running on a different port.
 
-Fix: Both dashboards need to fetch users from the API on mount:
-  useEffect(() => {
-    userService.getUsers().then(res => setUsers(res.data.data));
-  }, []);
-  Use local state, not the Zustand store's deprecated users array.
+================================================================================
+PROBLEM 10 — MEDIUM: DashboardLayout re-checks auth on every navigation
+================================================================================
 
-------------------------------------------------------------------------
+WHAT IS HAPPENING:
+  File: frontend/src/components/dashboard/DashboardLayout.tsx
+  The useEffect runs when isAuthChecked changes. After clearAuth() is
+  called (on 401), isAuthChecked is set to true. The user is redirected
+  to /auth. When they log in and come back to /dashboard, isAuthChecked
+  is still true (from the persist store), so checkAuth() is NOT called
+  again. The user stays logged in.
 
-[ISSUE-05] SEVERITY: HIGH
-Category: Logic Bug
-File: frontend/src/components/dashboard/SuperAdminDashboard.tsx
-Title: Ban/Unban/Role-change actions only mutate local Zustand store
+  BUT: If the user refreshes the page, isAuthChecked resets to false
+  (it's not persisted — correct), and checkAuth() runs again. This is
+  the intended behavior.
 
-Detail:
-  banUser(), unbanUser(), updateUserRole() all call Zustand store actions
-  which only update the local in-memory state. They do NOT call the API.
-  So banning a user in the UI has zero effect on the database.
-  On page refresh, the user appears active again.
+  The actual problem: After a successful login, setCurrentUser() sets
+  isAuthChecked = true. But fetchCompanies() is called without await,
+  so the sidebar may render before companies are loaded, showing
+  "No companies yet" briefly before the list appears.
 
-Fix: Replace store actions with API calls:
-  const handleBan = async (userId: string) => {
-    await userService.updateStatus(userId, 'BANNED', 'Violation');
-    // then refresh local user list
-  };
+WHERE TO FIX:
+  File: frontend/src/components/dashboard/DashboardLayout.tsx
+  Change:
+    setCurrentUser({ ... });
+    fetchCompanies();
+  To:
+    setCurrentUser({ ... });
+    await fetchCompanies();
 
-------------------------------------------------------------------------
+================================================================================
+PROBLEM 11 — MEDIUM: Notification bell has no click handler
+================================================================================
 
-[ISSUE-06] SEVERITY: HIGH
-Category: Logic Bug
-File: frontend/src/components/dashboard/Sidebar.tsx — handleCreateCompany()
-Title: Company creation only calls API but does not update Zustand store correctly
+WHAT IS HAPPENING:
+  File: frontend/src/components/dashboard/Sidebar.tsx
+  The notification bell icon shows an unread count badge, but clicking
+  it does nothing. There is no onClick handler and no notification panel.
+  The unread count is fetched and displayed, but users cannot read or
+  dismiss notifications from the UI.
 
-Detail:
-  handleCreateCompany() calls companyService.create() then fetchCompanies().
-  fetchCompanies() correctly fetches and sets companies in the store.
-  However, after creation the sidebar does NOT automatically select the
-  new company (setActiveCompany is never called). The user must manually
-  click the new company in the sidebar to activate it.
-  Minor UX issue but inconsistent with the old local createCompany() behavior
-  which did set activeCompanyId automatically.
+WHERE TO FIX:
+  Add a notification dropdown/panel component and wire it to the bell
+  icon's onClick. The notificationService already has all the needed
+  API calls (getAll, markAsRead, markAllAsRead).
 
-Fix: After fetchCompanies(), find the newly created company and set it active:
-  const res = await companyService.create(newCompanyName.trim());
-  await fetchCompanies();
-  if (res.data?.id) setActiveCompany(res.data.id);
+================================================================================
+PROBLEM 12 — MEDIUM: financialYearService.updateStatus() is dead code
+================================================================================
 
-------------------------------------------------------------------------
+WHAT IS HAPPENING:
+  File: frontend/src/services/financialYear.service.ts
+  The updateStatus function calls:
+    PATCH /companies/:companyId/years/:yearId/status
 
-[ISSUE-07] SEVERITY: HIGH
-Category: API Contract
-File: frontend/src/components/dashboard/CompanyDashboard.tsx — handleOpenYear()
-Title: Opening a financial year does not load data from the API
+  This endpoint does NOT exist on the backend. The backend has no
+  /status route for financial years. Review status changes go through
+  the /reviews endpoints.
 
-Detail:
-  handleOpenYear() calls setActiveYearId(yearId) then navigates to /fs/cover.
-  The AppContent component then calls useAuditData() which reads from
-  state.getActiveYearData(). But getActiveYearData() reads from
-  company.financialYears[].data — which is always empty because
-  fetchCompanies() only returns year counts, not full year data.
-  Result: Opening a financial year shows blank/default data instead of
-  the actual saved audit data from the database.
+  This function is never called anywhere in the codebase — it's dead
+  code that would return 404 if ever used.
 
-Fix: When a year is opened, fetch its full data from the API and populate
-  the store. Either:
-  (a) Call financialDataService.getByYearId(yearId) in handleOpenYear()
-      and store the result in the active year's data field, OR
-  (b) Refactor useAuditData() to fetch from API when activeYearId changes.
+WHERE TO FIX:
+  Remove the updateStatus function from financialYearService, or
+  replace it with the correct review workflow calls.
 
-------------------------------------------------------------------------
+================================================================================
+PROBLEM 13 — LOW: Inconsistent API response shape across controllers
+================================================================================
 
-SECTION B — MEDIUM SEVERITY
-------------------------------------------------------------------------
+WHAT IS HAPPENING:
+  Different controllers return different response shapes:
 
-[ISSUE-08] SEVERITY: MEDIUM
-Category: Security
-File: backend/src/modules/company/company.service.ts — softDelete()
-Title: No existence check before soft-deleting a company
-
-Detail:
-  softDelete() calls hasAccess() then immediately calls prisma.company.update()
-  without verifying the company exists and is not already deleted.
-  If the company doesn't exist, Prisma throws an unhandled P2025 error
-  (record not found) which bypasses the globalErrorHandler and returns
-  a raw 500 instead of a clean 404.
-
-Fix: Add before the update:
-  const company = await prisma.company.findUnique({ where: { id } });
-  if (!company || company.isDeleted) throw ApiError.notFound("Company not found");
-
-------------------------------------------------------------------------
-
-[ISSUE-09] SEVERITY: MEDIUM
-Category: Logic Bug
-File: frontend/src/components/dashboard/CompanyDashboard.tsx (line ~35)
-Title: hasAccess is hardcoded to true — no real access control
-
-Detail:
-  const hasAccess = true; // Temporary simplification
-  This means any authenticated user who navigates to /dashboard/my-companies
-  can see any company's dashboard if they set activeCompanyId in the store.
-  The backend enforces access correctly, but the frontend shows the UI
-  without checking permissions first.
-
-Fix: Replace with real check:
-  const hasAccess = activeCompany
-    ? permissionSelectors.canAccessCompany(currentUser, activeCompany)
-    : false;
-
-------------------------------------------------------------------------
-
-[ISSUE-10] SEVERITY: MEDIUM
-Category: Logic Bug
-File: frontend/src/components/dashboard/ProfilePage.tsx
-Title: Email verification status shown incorrectly
-
-Detail:
-  The profile page shows "Verified" if user.status === 'ACTIVE' and
-  "Not Verified" otherwise. But status and emailVerified are separate
-  fields. A user can be ACTIVE but have emailVerified: false (edge case),
-  or BANNED but have emailVerified: true.
-  The correct field to check is user.emailVerified (which IS returned
-  by the /auth/me endpoint).
-
-Fix: Change the condition to check the correct field:
-  {(currentUser as any).emailVerified ? (
-    <span className="text-green-400">Verified</span>
-  ) : (
-    <span className="text-red-400">Not Verified</span>
-  )}
-  Note: The User interface in useAppStore.ts does not include emailVerified.
-  Add it to the User interface.
-
-------------------------------------------------------------------------
-
-[ISSUE-11] SEVERITY: MEDIUM
-Category: Configuration
-File: backend/prisma/schema.prisma
-Title: datasource block missing url field — Prisma CLI commands will fail
-
-Detail:
-  datasource db {
-    provider = "postgresql"
-    // No url field!
-  }
-  Standard Prisma CLI commands (prisma migrate dev, prisma db push,
-  prisma studio) require the url field in the schema. Without it,
-  running any migration command will fail with:
-    "Error: The datasource url is required"
-  The adapter-based approach in prismaClient.ts works at runtime but
-  the CLI tooling is broken for all developers.
-
-Fix: Add url to the datasource block:
-  datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-  }
-
-------------------------------------------------------------------------
-
-[ISSUE-12] SEVERITY: MEDIUM
-Category: UX / Logic
-File: frontend/src/components/dashboard/CompanyDashboard.tsx
-Title: loadFinancialYears() called without await in action handlers
-
-Detail:
-  In submitFinancialYear(), requestRevisions(), finalizeYear(), and
-  confirmDeleteYear(), the call to loadFinancialYears() is NOT awaited:
-    toast.success('Submitted successfully', { id: toastId });
-    loadFinancialYears(); // <-- no await
-  This means the table may not refresh before the user sees the success
-  toast, creating a confusing state where the status badge still shows
-  the old value.
-
-Fix: Add await before loadFinancialYears() in all four handlers.
-
-------------------------------------------------------------------------
-
-SECTION C — LOW SEVERITY / CODE QUALITY
-------------------------------------------------------------------------
-
-[ISSUE-13] SEVERITY: LOW
-Category: Dead Code
-Files: backend/src/shared/ApiResponse.ts, backend/src/shared/catchAsync.ts
-Title: Two shared utilities are defined but never used
-
-Detail:
-  ApiResponse class: defined, never imported anywhere.
-  catchAsync wrapper: defined, never used — all controllers use manual
-  try/catch blocks instead.
-  These add noise and maintenance burden.
-
-Fix: Remove both files, or adopt them consistently across all controllers.
-
-------------------------------------------------------------------------
-
-[ISSUE-14] SEVERITY: LOW
-Category: Inconsistency
-File: Multiple backend controllers
-Title: Inconsistent API response shape across controllers
-
-Detail:
-  company/review/financialYear controllers return:
-    { message, statusCode, data }
-  notification/stats/auth controllers return:
+  auth, notification, stats controllers return:
     { success: true, message, statusCode, data }
+
+  company, user, review, financialYear, financialData controllers return:
+    { message, statusCode, data }  (no "success" field)
+
   The frontend httpClient interceptor returns response.data directly,
-  so callers get different shapes depending on which endpoint they hit.
-  This makes frontend error handling fragile.
+  so callers get different shapes. This makes error handling inconsistent
+  and can cause subtle bugs when checking response.success.
 
-Fix: Create a single shared sendResponse() utility in /shared/ and use
-  it in all controllers with a consistent shape:
-    { success: true, message, statusCode, data }
-
-------------------------------------------------------------------------
-
-================================================================================
-SUMMARY TABLE
-================================================================================
-
-ID         | Severity | Status   | Category          | File
------------|----------|----------|-------------------|---------------------------
-ISSUE-01   | CRITICAL | OPEN     | Workflow Bug      | CompanyDashboard.tsx
-ISSUE-02   | HIGH     | OPEN     | Security          | backend/.env
-ISSUE-03   | HIGH     | OPEN     | Security          | seed.ts
-ISSUE-04   | HIGH     | OPEN     | Logic Bug         | AdminDashboard.tsx
-ISSUE-05   | HIGH     | OPEN     | Logic Bug         | SuperAdminDashboard.tsx
-ISSUE-06   | HIGH     | OPEN     | Logic Bug         | Sidebar.tsx
-ISSUE-07   | HIGH     | OPEN     | API Contract      | CompanyDashboard.tsx
-ISSUE-08   | MEDIUM   | OPEN     | Security          | company.service.ts
-ISSUE-09   | MEDIUM   | OPEN     | Logic Bug         | CompanyDashboard.tsx
-ISSUE-10   | MEDIUM   | OPEN     | Logic Bug         | ProfilePage.tsx
-ISSUE-11   | MEDIUM   | OPEN     | Configuration     | schema.prisma
-ISSUE-12   | MEDIUM   | OPEN     | UX/Logic          | CompanyDashboard.tsx
-ISSUE-13   | LOW      | OPEN     | Dead Code         | ApiResponse/catchAsync
-ISSUE-14   | LOW      | OPEN     | Inconsistency     | Multiple controllers
-
-Previously Fixed (v1 -> v2): 14 issues resolved
-Remaining open: 14 issues
-TypeScript build: PASS (0 errors on both projects)
+WHERE TO FIX:
+  Standardize all controllers to use the same response shape.
+  Create a shared sendResponse utility in backend/src/shared/ and
+  use it everywhere with: { success: true, message, statusCode, data }
 
 ================================================================================
-RECOMMENDED FIX ORDER
+PROBLEM 14 — LOW: Seed file uses hardcoded password
 ================================================================================
 
-Round 1 — Fix immediately (breaks core user flows):
-  1. ISSUE-01: Add "Start Review" button to CompanyDashboard
-  2. ISSUE-07: Load financial year data from API when opening a year
-  3. ISSUE-04: Fetch users from API in AdminDashboard
-  4. ISSUE-05: Wire ban/unban/role actions to API in SuperAdminDashboard
+WHAT IS HAPPENING:
+  File: backend/prisma/seed.ts
+  The seed creates the admin with password 'Admin@123456' (with fallback
+  to SEED_ADMIN_PASSWORD env var). The hardcoded password is visible to
+  anyone with repo access.
 
-Round 2 — Fix before any user testing:
-  5. ISSUE-02: Rotate all exposed credentials
-  6. ISSUE-03: Remove hardcoded seed password
-  7. ISSUE-11: Add url field to prisma schema datasource
-  8. ISSUE-12: Await loadFinancialYears() in all handlers
-
-Round 3 — Polish and hardening:
-  9.  ISSUE-06: Auto-select new company after creation
-  10. ISSUE-08: Add existence check in company softDelete
-  11. ISSUE-09: Replace hardcoded hasAccess = true
-  12. ISSUE-10: Fix email verification display in ProfilePage
-  13. ISSUE-13: Remove dead code (ApiResponse, catchAsync)
-  14. ISSUE-14: Standardize API response shape
+WHERE TO FIX:
+  Remove the hardcoded fallback:
+  Change:
+    const password = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456';
+  To:
+    const password = process.env.SEED_ADMIN_PASSWORD;
+    if (!password) throw new Error('SEED_ADMIN_PASSWORD env var is required');
 
 ================================================================================
-END OF REPORT v2
+COMPLETE ISSUE SUMMARY TABLE
+================================================================================
+
+#   | Severity | Area     | Problem
+----|----------|----------|--------------------------------------------------
+1   | CRITICAL | Auth     | Login never sets session cookie → login loop
+2   | CRITICAL | Config   | Port conflict causes CORS failures
+3   | CRITICAL | Auth     | All protected endpoints return 401 (downstream of #1)
+4   | HIGH     | Frontend | userService.updateStatus() calls wrong endpoint (404)
+5   | HIGH     | Frontend | createStudent/createAdmin call wrong endpoints (404)
+6   | HIGH     | Frontend | Opening financial year shows blank data (wrong mutation)
+7   | HIGH     | Backend  | Prisma schema missing url → migrations broken
+8   | HIGH     | Security | Real credentials in .env file
+9   | MEDIUM   | Config   | Vite silently changes port → CORS breaks
+10  | MEDIUM   | Frontend | fetchCompanies not awaited → sidebar flicker
+11  | MEDIUM   | Frontend | Notification bell has no click handler
+12  | MEDIUM   | Frontend | financialYearService.updateStatus() is dead code (404)
+13  | LOW      | Backend  | Inconsistent API response shape across controllers
+14  | LOW      | Security | Hardcoded seed password
+
+================================================================================
+WHAT WORKS CORRECTLY (VERIFIED BY LIVE TESTING)
+================================================================================
+
+  Backend server starts and connects to database: YES
+  Frontend server starts and serves HTML: YES
+  Health endpoint: YES
+  Input validation (Zod): YES — returns proper 400 with field errors
+  Authentication guard (401 on protected routes): YES
+  Route not found (404): YES
+  CORS headers for http://localhost:3000: YES
+  Login endpoint returns correct user data: YES
+  Login validation (wrong credentials): YES — returns 401
+  Register validation (bad input): YES — returns 400 with field errors
+  TypeScript compilation: YES — 0 errors on both projects
+
+================================================================================
+PRIORITY FIX ORDER
+================================================================================
+
+Fix these in order — #1 blocks everything else:
+
+  1. PROBLEM 1 (Login cookie): Fix auth.controller.ts to create account
+     record on-the-fly during login so Better Auth can issue the cookie.
+     Without this, NO user can log in and use the app.
+
+  2. PROBLEM 4 (updateStatus endpoint): Fix user.service.ts to call
+     /ban and /unban instead of /status.
+
+  3. PROBLEM 6 (Year data loading): Fix handleOpenYear to use proper
+     Zustand set() action instead of direct mutation.
+
+  4. PROBLEM 7 (Prisma schema): Add url = env("DATABASE_URL") to schema.
+
+  5. PROBLEM 9 (Port strictness): Add --strictPort to vite command.
+
+  6. PROBLEM 5 (createStudent/Admin): Fix or remove dead endpoint calls.
+
+  7. PROBLEM 8 (Credentials): Rotate all exposed credentials.
+
+  8. PROBLEM 10 (fetchCompanies await): Add await in DashboardLayout.
+
+  9. PROBLEM 11 (Notification bell): Add click handler and panel.
+
+  10. PROBLEMS 12-14: Clean up dead code and inconsistencies.
+
+================================================================================
+END OF REPORT
 ================================================================================

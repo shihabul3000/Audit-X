@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 import * as authService from "./auth.service";
 import { auth } from "./auth.utils";
+import { prisma } from "../../config/prismaClient";
+import crypto from "crypto";
 
 const sendResponse = (
   res: Response,
@@ -47,10 +49,30 @@ export const login = async (
       });
     }
 
+    // Ensure Better Auth has an account record before generating session
+    const existingUserForm = await prisma.user.findUnique({ where: { email } });
+    if (existingUserForm) {
+      const userAcc = await prisma.account.findFirst({ where: { userId: existingUserForm.id } });
+      if (!userAcc) {
+        await prisma.account.create({
+          data: {
+            id: `acc_${existingUserForm.id}`,
+            accountId: existingUserForm.id,
+            providerId: "email",
+            userId: existingUserForm.id,
+            password: existingUserForm.password,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+
     // Attempt to create a Better Auth session for cookie-based auth.
     // This may fail if the user was created via the custom register flow
     // (no Better Auth account record). Fail silently — the custom auth
     // middleware handles session validation independently.
+    let sessionCreated = false;
     try {
       const session = await auth.api.signInEmail({
         body: { email, password },
@@ -60,10 +82,43 @@ export const login = async (
         const setCookieHeader = (session as any).headers?.get?.("set-cookie");
         if (setCookieHeader) {
           res.setHeader("set-cookie", setCookieHeader);
+          sessionCreated = true;
         }
       }
     } catch {
-      // Better Auth session creation failed — custom session will be used
+      // Better Auth session creation failed — will try custom session
+    }
+
+    // Fallback: Create custom session if Better Auth didn't set a cookie
+    if (!sessionCreated) {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) {
+        const sessionToken = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        await prisma.session.upsert({
+          where: { token: sessionToken },
+          create: {
+            id: sessionToken,
+            expiresAt,
+            token: sessionToken,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: user.id,
+            ipAddress: req.ip || null,
+            userAgent: req.get("user-agent") || null,
+          },
+          update: {
+            expiresAt,
+            updatedAt: new Date(),
+          },
+        });
+
+        res.setHeader(
+          "Set-Cookie",
+          `better-auth.session_token=${sessionToken}; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}; Path=/`
+        );
+      }
     }
 
     sendResponse(res, 200, "Login successful", {
