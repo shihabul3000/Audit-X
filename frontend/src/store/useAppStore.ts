@@ -4,11 +4,11 @@ import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuditReportData } from '../types';
-import { Store as N4_13_State } from '../components/tabs/N4_13/types';
+import { StoreData as N4_13_State } from '../components/tabs/N4_13/types';
 import { buildInitialSections } from '../components/tabs/N4_13/sections';
 import { recalculate } from '../components/tabs/N4_13/recalculate';
 
-export type UserRole = 'student' | 'admin' | 'super_admin';
+export type UserRole = 'STUDENT' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface UserNotification {
   id: string;
@@ -27,7 +27,7 @@ export interface User {
   email: string;
   profileImg?: string;
   role: UserRole;
-  status: 'active' | 'banned' | 'deleted';
+  status: 'ACTIVE' | 'BANNED' | 'DELETED';
   bannedReason?: string;
   bannedByUserId?: string;
   
@@ -37,11 +37,11 @@ export interface User {
   notifications: UserNotification[];
 }
 
-export type ReviewStatus = 'draft' | 'submitted' | 'under_review' | 'changes_requested' | 'finalized';
+export type ReviewStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'CHANGES_REQUESTED' | 'FINALIZED';
 
 export interface ReviewEvent {
   id: string;
-  type: 'created' | 'submitted' | 'under_review' | 'changes_requested' | 'finalized' | 'reopened';
+  type: 'CREATED' | 'SUBMITTED' | 'UNDER_REVIEW' | 'CHANGES_REQUESTED' | 'FINALIZED' | 'REOPENED';
   actorUserId: string;
   actorRole: UserRole | string;
   note?: string;
@@ -195,36 +195,36 @@ export const getDefaultNotesData = (): N4_13_State => {
 
 export const authSelectors = {
   getCurrentUser: (state: AppState) => state.currentUser,
-  isBanned: (user: User | null) => user?.status === 'banned',
-  isSuperAdmin: (user: User | null) => user?.role === 'SUPER_ADMIN' || user?.role === 'super_admin',
-  isAdmin: (user: User | null) => user?.role === 'ADMIN' || user?.role === 'admin',
-  isStudent: (user: User | null) => !user || user.role === 'STUDENT' || user.role === 'student',
+  isBanned: (user: User | null) => user?.status !== 'ACTIVE',
+  isSuperAdmin: (user: User | null) => user?.role === 'SUPER_ADMIN',
+  isAdmin: (user: User | null) => user?.role === 'ADMIN',
+  isStudent: (user: User | null) => !user || user.role === 'STUDENT',
 };
 
 export const permissionSelectors = {
   canAccessCompany: (user: User | null, company: Company | null) => {
-    if (!user || user.status === 'banned' || !company) return false;
-    if (user.role === 'super_admin') return true;
-    if (user.role === 'admin') return true; // Could scope to assigned admin
+    if (!user || user.status === 'BANNED' || !company) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'ADMIN') return true; // Could scope to assigned admin
     return user.assignedCompanyIds.includes(company.id) || company.createdByUserId === user.id;
   },
 
   canEditFinancialYear: (user: User | null, year: FinancialYear | null) => {
-    if (!user || user.status === 'banned' || !year) return false;
+    if (!user || user.status === 'BANNED' || !year) return false;
     if (year.isLocked) return false;
     
-    if (user.role === 'super_admin') return true;
-    if (user.role === 'admin') return true; // Admins can edit accessible ones
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'ADMIN') return true; // Admins can edit accessible ones
 
-    if (user.role === 'student') {
+    if (user.role === 'STUDENT') {
       return year.assignedStudentIds.includes(user.id) || year.createdByUserId === user.id;
     }
     return false;
   },
 
   canFinalizeFinancialYear: (user: User | null, year: FinancialYear | null) => {
-     if (!user || user.status === 'banned' || !year) return false;
-     return user.role === 'super_admin' || user.role === 'admin';
+     if (!user || user.status === 'BANNED' || !year) return false;
+     return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
   }
 };
 
@@ -436,7 +436,7 @@ export const useAppStore = create<AppState>()(
           year: newYearNumber,
           reportingDate,
           status: 'in-progress',
-          reviewStatus: 'draft',
+          reviewStatus: 'DRAFT',
           isLocked: false,
           createdByUserId: currentUserId,
           assignedStudentIds: [],
@@ -463,7 +463,7 @@ export const useAppStore = create<AppState>()(
         const year = company?.financialYears.find(y => y.id === targetId);
         if (year) {
           year.status = 'completed'; // For backward compat
-          year.reviewStatus = 'finalized';
+          year.reviewStatus = 'FINALIZED';
           year.isLocked = true;
         }
       }),
@@ -514,11 +514,11 @@ export const useAppStore = create<AppState>()(
       // --- RBAC & Review Actions ---
 
       createUser: (name, email, role) => set(state => {
-        if (state.users.some(u => u.email === email && u.status !== 'deleted')) {
+        if (state.users.some(u => u.email === email && u.status !== 'DELETED')) {
            throw new Error('User already exists');
         }
         state.users.push({
-           id: uuidv4(), name, email, role, status: 'active',
+            id: uuidv4(), name, email, role, status: 'ACTIVE',
            assignedCompanyIds: [], notifications: []
         });
       }),
@@ -531,7 +531,7 @@ export const useAppStore = create<AppState>()(
       banUser: (userId, reason) => set(state => {
         const user = state.users.find(u => u.id === userId);
         if (user) {
-           user.status = 'banned';
+           user.status = 'BANNED';
            user.bannedReason = reason;
            user.bannedByUserId = state.currentUser?.id || undefined;
         }
@@ -540,7 +540,7 @@ export const useAppStore = create<AppState>()(
       unbanUser: (userId) => set(state => {
         const user = state.users.find(u => u.id === userId);
         if (user) {
-           user.status = 'active';
+           user.status = 'ACTIVE';
            user.bannedReason = undefined;
            user.bannedByUserId = undefined;
         }
@@ -548,7 +548,7 @@ export const useAppStore = create<AppState>()(
 
       softDeleteUser: (userId) => set(state => {
         const user = state.users.find(u => u.id === userId);
-        if (user) user.status = 'deleted';
+        if (user) user.status = 'DELETED';
       }),
 
       assignStudentToAdmin: (studentId, adminId) => set(state => {
@@ -583,11 +583,11 @@ export const useAppStore = create<AppState>()(
          const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
-           year.reviewStatus = 'submitted';
+           year.reviewStatus = 'SUBMITTED';
            year.submittedAt = new Date().toISOString();
            year.reviewEvents.push({
-             id: uuidv4(), type: 'submitted',
-             actorUserId: state.currentUser?.id!, actorRole: 'student',
+             id: uuidv4(), type: 'SUBMITTED',
+              actorUserId: state.currentUser?.id!, actorRole: 'STUDENT',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -597,11 +597,11 @@ export const useAppStore = create<AppState>()(
          const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
-           year.reviewStatus = 'under_review';
+           year.reviewStatus = 'UNDER_REVIEW';
            year.currentReviewerUserId = state.currentUser?.id;
            year.reviewEvents.push({
-             id: uuidv4(), type: 'under_review',
-             actorUserId: state.currentUser?.id!, actorRole: 'admin',
+             id: uuidv4(), type: 'UNDER_REVIEW',
+              actorUserId: state.currentUser?.id!, actorRole: 'ADMIN',
              createdAt: new Date().toISOString()
            });
          }
@@ -611,10 +611,10 @@ export const useAppStore = create<AppState>()(
          const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
-           year.reviewStatus = 'changes_requested';
+           year.reviewStatus = 'CHANGES_REQUESTED';
            year.reviewEvents.push({
-             id: uuidv4(), type: 'changes_requested',
-             actorUserId: state.currentUser?.id!, actorRole: 'admin',
+             id: uuidv4(), type: 'CHANGES_REQUESTED',
+              actorUserId: state.currentUser?.id!, actorRole: 'ADMIN',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -624,14 +624,14 @@ export const useAppStore = create<AppState>()(
          const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
-           year.reviewStatus = 'finalized';
+           year.reviewStatus = 'FINALIZED';
            year.isLocked = true;
            year.status = 'completed'; // Compat
            year.finalizedAt = new Date().toISOString();
            year.finalizedByUserId = state.currentUser?.id;
            year.reviewEvents.push({
-             id: uuidv4(), type: 'finalized',
-             actorUserId: state.currentUser?.id!, actorRole: 'admin',
+             id: uuidv4(), type: 'FINALIZED',
+              actorUserId: state.currentUser?.id!, actorRole: 'ADMIN',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -641,14 +641,14 @@ export const useAppStore = create<AppState>()(
          const company = state.companies.find(c => c.financialYears.some(y => y.id === yearId));
          const year = company?.financialYears.find(y => y.id === yearId);
          if (year) {
-           year.reviewStatus = 'draft';
+           year.reviewStatus = 'DRAFT';
            year.isLocked = false;
            year.status = 'in-progress'; // Compat
            year.finalizedAt = null;
            year.finalizedByUserId = null;
            year.reviewEvents.push({
-             id: uuidv4(), type: 'reopened',
-             actorUserId: state.currentUser?.id!, actorRole: 'admin',
+             id: uuidv4(), type: 'REOPENED',
+              actorUserId: state.currentUser?.id!, actorRole: 'ADMIN',
              createdAt: new Date().toISOString(), note
            });
          }
@@ -694,8 +694,8 @@ export const useAppStore = create<AppState>()(
               id: oldUser.id,
               name: oldUser.name,
               email: oldUser.email,
-              role: oldUser.role || 'student',
-              status: oldUser.status || 'active',
+               role: oldUser.role || 'STUDENT',
+               status: oldUser.status || 'ACTIVE',
               bannedReason: oldUser.bannedReason,
               bannedByUserId: oldUser.bannedByUserId,
               profileImg: oldUser.profileImg,

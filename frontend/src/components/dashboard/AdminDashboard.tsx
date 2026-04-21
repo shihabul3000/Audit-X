@@ -10,9 +10,9 @@ export const AdminDashboard: React.FC = () => {
   const unassignCompanyFromUser = useAppStore(state => state.unassignCompanyFromUser);
   const navigate = useNavigate();
 
-  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin')) return null;
+  if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'SUPER_ADMIN')) return null;
 
-  const students = users.filter(u => u.role === 'student');
+  const students = users.filter(u => u.role === 'STUDENT');
 
   return (
     <div className="flex-1 bg-[#121212] p-8 overflow-y-auto text-white">

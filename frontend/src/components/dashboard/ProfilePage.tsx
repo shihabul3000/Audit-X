@@ -37,7 +37,7 @@ export const ProfilePage: React.FC = () => {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-sm font-medium text-gray-400">Email Status</div>
               <div className="col-span-2 text-sm text-white">
-                {currentUser.emailVerified ? (
+                {currentUser.status === 'ACTIVE' ? (
                   <span className="text-green-400">Verified</span>
                 ) : (
                   <span className="text-red-400">Not Verified</span>

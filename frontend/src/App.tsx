@@ -55,7 +55,7 @@ function AppContent() {
     return null; // Prevents render glitch before redirect
   }
 
-  if (currentUser?.status === 'banned') {
+  if (currentUser?.status === 'BANNED') {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-full bg-[#121212] text-white">
          <AlertCircle size={48} className="text-red-500 mb-4" />

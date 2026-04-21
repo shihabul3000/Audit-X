@@ -8,7 +8,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const banUser = useAppStore(state => state.banUser);
   const unbanUser = useAppStore(state => state.unbanUser);
 
-  if (currentUser?.role !== 'super_admin') return null;
+  if (currentUser?.role !== 'SUPER_ADMIN') return null;
 
   return (
     <div className="flex-1 bg-[#121212] p-8 overflow-y-auto text-white">
@@ -35,16 +35,16 @@ export const SuperAdminDashboard: React.FC = () => {
                      onChange={e => updateUserRole(u.id, e.target.value as any)}
                      className="bg-black border border-gray-700 rounded px-2 py-1 outline-none focus:border-blue-500"
                   >
-                    <option value="student">Student</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
                   </select>
                 </td>
                 <td className="py-3">
-                  {u.status === 'banned' ? <span className="text-red-400 font-bold text-xs uppercase bg-red-400/10 px-2 py-1 rounded">Banned</span> : <span className="text-emerald-400 font-bold text-xs uppercase bg-emerald-400/10 px-2 py-1 rounded">Active</span>}
+                  {u.status === 'BANNED' ? <span className="text-red-400 font-bold text-xs uppercase bg-red-400/10 px-2 py-1 rounded">Banned</span> : <span className="text-emerald-400 font-bold text-xs uppercase bg-emerald-400/10 px-2 py-1 rounded">Active</span>}
                 </td>
                 <td className="py-3">
-                  {u.status === 'banned' ? (
+                  {u.status === 'BANNED' ? (
                      <button onClick={() => unbanUser(u.id)} className="text-blue-400 text-sm px-3 py-1 hover:bg-blue-400/10 rounded">Unban</button>
                   ) : (
                      <button onClick={() => banUser(u.id, 'Violation')} className="text-red-400 text-sm px-3 py-1 hover:bg-red-400/10 rounded">Ban</button>

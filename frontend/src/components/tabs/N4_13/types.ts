@@ -102,3 +102,18 @@ export interface Store {
   updatePPESummary: (summary: Partial<Store['ppe']>) => void;
   updateCompanyInfo: (field: keyof Company, value: string) => void;
 }
+
+export type StoreData = Omit<
+  Store,
+  | 'updateRow'
+  | 'addRow'
+  | 'deleteRow'
+  | 'updateRowLabel'
+  | 'updateConfig'
+  | 'addTableItem'
+  | 'updateTableItem'
+  | 'deleteTableItem'
+  | 'updateSectionTitle'
+  | 'updatePPESummary'
+  | 'updateCompanyInfo'
+>;
