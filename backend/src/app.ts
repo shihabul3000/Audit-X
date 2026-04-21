@@ -13,6 +13,8 @@ import companyRoutes from "./modules/company/company.routes";
 import financialDataRoutes from "./modules/financial-data/financialData.routes";
 import financialYearRoutes from "./modules/financial-year/financialYear.routes";
 import reviewRoutes from "./modules/review/review.routes";
+import notificationRoutes from "./modules/notification/notification.routes";
+import statsRoutes from "./modules/stats/stats.routes";
 import { globalErrorHandler } from "./middleware/error.middleware";
 
 export const app = express();
@@ -45,6 +47,10 @@ app.use("/api/v1/financial-data", financialDataRoutes);
 app.use("/api/v1/companies/:companyId/years", financialYearRoutes);
 
 app.use("/api/v1/reviews", reviewRoutes);
+
+app.use("/api/v1/notifications", notificationRoutes);
+
+app.use("/api/v1/stats", statsRoutes);
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
