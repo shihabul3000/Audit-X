@@ -56,6 +56,18 @@ export const register = async (
     html: `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in ${config.OTP_EXPIRES_MINUTES} minutes.</p>`,
   });
 
+  await prisma.account.create({
+    data: {
+      id: `acc_${user.id}`,
+      accountId: user.id,
+      providerId: "email",
+      userId: user.id,
+      password: hashedPassword,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
   return {
     id: user.id,
     name: user.name,

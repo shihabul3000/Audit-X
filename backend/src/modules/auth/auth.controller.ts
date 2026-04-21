@@ -47,17 +47,23 @@ export const login = async (
       });
     }
 
-    // Create Better Auth session
-    const session = await auth.api.signInEmail({
-      body: { email, password },
-    });
+    // Attempt to create a Better Auth session for cookie-based auth.
+    // This may fail if the user was created via the custom register flow
+    // (no Better Auth account record). Fail silently — the custom auth
+    // middleware handles session validation independently.
+    try {
+      const session = await auth.api.signInEmail({
+        body: { email, password },
+      });
 
-    if (session && 'headers' in session) {
-      // Forward set-cookie headers from Better Auth
-      const setCookieHeader = (session as any).headers?.get?.("set-cookie");
-      if (setCookieHeader) {
-        res.setHeader("set-cookie", setCookieHeader);
+      if (session && 'headers' in session) {
+        const setCookieHeader = (session as any).headers?.get?.("set-cookie");
+        if (setCookieHeader) {
+          res.setHeader("set-cookie", setCookieHeader);
+        }
       }
+    } catch {
+      // Better Auth session creation failed — custom session will be used
     }
 
     sendResponse(res, 200, "Login successful", {

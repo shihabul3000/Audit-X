@@ -1,7 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
-const prisma = new PrismaClient();
+dotenv.config();
+
+const { Pool } = pg;
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Seeding default Super Admin...');
@@ -15,7 +23,8 @@ async function main() {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'Admin@123456', 12);
+  const password = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456';
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   await prisma.user.create({
     data: {
@@ -29,7 +38,7 @@ async function main() {
     }
   });
 
-  console.log('Super Admin seeded successfully: admin@audit-x.com / Admin@123456');
+  console.log('Super Admin seeded successfully: admin@audit-x.com');
 }
 
 main()
@@ -39,4 +48,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
