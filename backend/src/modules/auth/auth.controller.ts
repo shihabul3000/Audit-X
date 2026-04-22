@@ -57,8 +57,8 @@ export const login = async (
         await prisma.account.create({
           data: {
             id: `acc_${existingUserForm.id}`,
-            accountId: existingUserForm.id,
-            providerId: "email",
+            accountId: existingUserForm.email,
+            providerId: "credential",
             userId: existingUserForm.id,
             password: existingUserForm.password,
             createdAt: new Date(),
@@ -74,19 +74,35 @@ export const login = async (
     // middleware handles session validation independently.
     let sessionCreated = false;
     try {
-      const session = await auth.api.signInEmail({
+      const headers = new Headers();
+      if (req.headers.host) headers.set('host', req.headers.host);
+      if (req.headers['user-agent']) headers.set('user-agent', req.headers['user-agent']);
+      if (req.headers['x-forwarded-for']) headers.set('x-forwarded-for', req.headers['x-forwarded-for'] as string);
+
+      const response = await auth.api.signInEmail({
         body: { email, password },
+        headers: headers,
+        asResponse: true
       });
 
-      if (session && 'headers' in session) {
-        const setCookieHeader = (session as any).headers?.get?.("set-cookie");
-        if (setCookieHeader) {
-          res.setHeader("set-cookie", setCookieHeader);
+      if (response && response.ok && response.headers) {
+        let setCookies: string[] = [];
+        if (typeof response.headers.getSetCookie === 'function') {
+          setCookies = response.headers.getSetCookie();
+        } else {
+          const cookieStr = response.headers.get("set-cookie");
+          if (cookieStr) setCookies = [cookieStr];
+        }
+        
+        if (setCookies.length > 0) {
+          res.setHeader("set-cookie", setCookies);
           sessionCreated = true;
         }
+      } else {
+        console.warn("Better Auth session creation returned non-ok:", response?.status);
       }
-    } catch {
-      // Better Auth session creation failed — will try custom session
+    } catch (e) {
+      console.error("Better Auth session creation failed:", e);
     }
 
     // Fallback: Create custom session if Better Auth didn't set a cookie

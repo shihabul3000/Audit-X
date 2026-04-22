@@ -56,6 +56,23 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.get("/", (_req: Request, res: Response) => {
+  res.json({
+    message: "Audit-X API Server",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      auth: "/api/v1/auth",
+      companies: "/api/v1/companies",
+      users: "/api/v1/users",
+      "financial-data": "/api/v1/financial-data",
+      reviews: "/api/v1/reviews",
+      notifications: "/api/v1/notifications",
+      stats: "/api/v1/stats"
+    }
+  });
+});
+
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(ApiError.notFound("Route not found"));
 });
