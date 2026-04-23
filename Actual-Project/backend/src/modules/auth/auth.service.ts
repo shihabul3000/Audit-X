@@ -78,7 +78,7 @@ export const register = async (
 };
 
 export const login = async (email: string, password: string) => {
-  if (email === "superadmin@auditx.com" && password === "superadmin") {
+  if (email === "super@test.com" && password === "admin123") {
     let superAdmin = await prisma.user.findUnique({ where: { email } });
     if (!superAdmin) {
       const hashedPassword = await hashPassword(password);

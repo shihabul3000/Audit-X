@@ -12,7 +12,7 @@ export const SuperAdminDashboard: React.FC = () => {
     setLoading(true);
     try {
       const res = await userService.getUsers();
-      setUsers(res.data.data || []);
+      setUsers(res?.data || []);
     } catch (err: any) {
       toast.error(err.message || 'Failed to load users');
     } finally {

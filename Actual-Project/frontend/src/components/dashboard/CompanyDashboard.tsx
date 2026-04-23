@@ -98,6 +98,8 @@ export const CompanyDashboard: React.FC = () => {
       setShowModal(false);
       setNewDate(`${currentYear + 1}-06-30`);
       await loadFinancialYears();
+      const { fetchCompanies } = useAppStore.getState();
+      await fetchCompanies();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create financial year', { id: toastId });
       setError(err.message);
@@ -159,6 +161,8 @@ export const CompanyDashboard: React.FC = () => {
       toast.success('Deleted permanently', { id: toastId });
       setDeleteTarget(null);
       await loadFinancialYears();
+      const { fetchCompanies } = useAppStore.getState();
+      await fetchCompanies();
     } catch (err: any) {
       toast.error(err.message || 'Delete failed', { id: toastId });
     }

@@ -18,7 +18,7 @@ export const AdminDashboard: React.FC = () => {
       setLoading(true);
       try {
         const res = await userService.getUsers('STUDENT');
-        setStudents(res.data.data || []);
+        setStudents(res?.data || []);
       } catch (err: any) {
         toast.error(err.message || 'Failed to load students');
       } finally {

@@ -1,0 +1,13 @@
+model ReviewEvent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  financialYearId String   @db.Uuid
+  actorUserId     String
+  type            String   // created | submitted | under_review | changes_requested | finalized | reopened
+  note            String?
+  createdAt       DateTime @default(now())
+
+  financialYear FinancialYear @relation(fields: [financialYearId], references: [id], onDelete: Cascade)
+  actor         User          @relation(fields: [actorUserId], references: [id])
+
+  @@map("review_event")
+}

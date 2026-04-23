@@ -23,7 +23,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: config.FRONTEND_URL,
+    origin: [config.FRONTEND_URL, "http://localhost:5173"],
     credentials: true
   })
 );
@@ -43,8 +43,6 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/companies", companyRoutes);
 
 app.use("/api/v1/financial-data", financialDataRoutes);
-
-app.use("/api/v1/companies/:cId/years", financialYearRoutes);
 
 app.use("/api/v1/reviews", reviewRoutes);
 
