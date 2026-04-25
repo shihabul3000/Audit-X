@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "lib/error.ts", "lib/utils/permissions.ts", "src/main.tsx", "vite.config.ts", "vite-env.d.ts", "src/App.tsx", "src/store/useAppStore.ts", "src/hooks/useAuditData.ts", "src/components/auth/AuthPage.tsx", "src/components/dashboard/DashboardLayout.tsx", "src/components/dashboard/Sidebar.tsx", "src/components/dashboard/CompanyDashboard.tsx", "src/components/dashboard/AdminDashboard.tsx", "src/components/dashboard/SuperAdminDashboard.tsx", "src/components/landing/LandingPageClient.tsx"]
+}
