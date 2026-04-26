@@ -1,53 +1,74 @@
+'use client';
 import React from 'react';
+import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-slate-950 pt-16 pb-8 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+    <footer style={{ background: '#020617', padding: '64px 24px 32px', borderTop: '1px solid #1e293b' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
 
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-6 opacity-90">
-              <div className="bg-indigo-600 text-white p-1 rounded-md">
-                <ShieldCheck size={20} />
+        {/* Top grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48, marginBottom: 48 }}>
+
+          {/* Brand */}
+          <div style={{ gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <div style={{ background: '#6366f1', color: '#fff', padding: 4, borderRadius: 6, display: 'flex' }}>
+                <ShieldCheck size={18} />
               </div>
-              <span className="font-bold text-xl text-white tracking-tight">
-                Audit<span className="text-indigo-400">-X</span>
+              <span style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>
+                Audit<span style={{ color: '#818cf8' }}>-X</span>
               </span>
             </div>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-md">
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, maxWidth: 320 }}>
               A premium financial workspace for auditors and accountants to generate multi-year reporting, robust rollovers, and perfectly formatted SFPs.
             </p>
           </div>
 
+          {/* Product */}
           <div>
-            <h4 className="font-semibold text-white mb-4 uppercase text-xs tracking-wider">Product</h4>
-            <ul className="space-y-3">
-              <li><a href="#features" className="text-sm text-slate-400 hover:text-white transition-colors">Features</a></li>
-              <li><a href="#how-it-works" className="text-sm text-slate-400 hover:text-white transition-colors">How it works</a></li>
-              <li><a href="/dashboard" className="text-sm text-slate-400 hover:text-white transition-colors">Dashboard</a></li>
+            <h4 style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>Product</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {[
+                { label: 'Features', href: '#features' },
+                { label: 'How it works', href: '#how-it-works' },
+                { label: 'Dashboard', href: '/auth' },
+              ].map((item) => (
+                <li key={item.label} style={{ marginBottom: 12 }}>
+                  <a href={item.href} style={{ fontSize: 14, color: '#64748b', textDecoration: 'none' }}>{item.label}</a>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Legal */}
           <div>
-            <h4 className="font-semibold text-white mb-4 uppercase text-xs tracking-wider">Legal</h4>
-            <ul className="space-y-3">
-              <li><span className="text-sm text-slate-500 cursor-not-allowed">Privacy Policy</span></li>
-              <li><span className="text-sm text-slate-500 cursor-not-allowed">Terms of Service</span></li>
-              <li><span className="text-sm text-slate-500 cursor-not-allowed">Contact Support</span></li>
+            <h4 style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>Legal</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {['Privacy Policy', 'Terms of Service', 'Contact Support'].map((item) => (
+                <li key={item} style={{ marginBottom: 12 }}>
+                  <span style={{ fontSize: 14, color: '#334155', cursor: 'not-allowed' }}>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
-
         </div>
 
-        <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
+        {/* Bottom bar */}
+        <div style={{ borderTop: '1px solid #1e293b', paddingTop: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <p style={{ fontSize: 12, color: '#334155' }}>
             &copy; {new Date().getFullYear()} Audit-X Software. All rights reserved.
           </p>
-          <div className="flex gap-4">
-            <span className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 border border-slate-800">in</span>
-            <span className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 border border-slate-800">X</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {['in', 'X'].map((s) => (
+              <span key={s} style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: '#0f172a', border: '1px solid #1e293b',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, color: '#64748b', fontWeight: 600,
+              }}>{s}</span>
+            ))}
           </div>
         </div>
       </div>

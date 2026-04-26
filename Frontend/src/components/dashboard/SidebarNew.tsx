@@ -70,33 +70,54 @@ export function SidebarNew({ user }: SidebarNewProps) {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
 
   return (
-    <div className="w-64 bg-[#1a1a1a] border-r border-gray-800 flex flex-col h-full text-white shrink-0">
-      <div className="p-6 border-b border-gray-800">
-        <h2 className="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-          Audit-X
-        </h2>
+    <div className="w-64 bg-[#0d1018] border-r border-white/[0.06] flex flex-col h-full text-white shrink-0">
+      {/* Logo header */}
+      <div className="p-6 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f7df7] to-[#6366f1] flex items-center justify-center shrink-0">
+            <span className="text-white font-bold text-sm">A</span>
+          </div>
+          <h2 className="text-lg font-bold tracking-tight text-white">
+            Audit<span className="text-[#4f7df7]">-X</span>
+          </h2>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+      {/* Scrollable nav area */}
+      <div className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
         {isAdmin && (
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Management</div>
+            <div className="text-[10px] font-semibold text-[#4a5568] uppercase tracking-widest px-2 mb-2">
+              Management
+            </div>
             <button
               onClick={() => router.push('/dashboard/my-companies')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${pathname.includes('/my-companies') ? 'bg-blue-600/20 text-blue-400 font-medium border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                pathname.includes('/my-companies')
+                  ? 'bg-[#4f7df7]/10 text-[#4f7df7] font-medium border border-[#4f7df7]/20'
+                  : 'text-[#8a9ab5] hover:text-white hover:bg-white/[0.04]'
+              }`}
             >
               My assigned companies
             </button>
             <button
               onClick={() => router.push('/dashboard/admin')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${pathname.includes('/admin') ? 'bg-blue-600/20 text-blue-400 font-medium border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                pathname.includes('/admin')
+                  ? 'bg-[#4f7df7]/10 text-[#4f7df7] font-medium border border-[#4f7df7]/20'
+                  : 'text-[#8a9ab5] hover:text-white hover:bg-white/[0.04]'
+              }`}
             >
               Firm Operations (Admin)
             </button>
             {isSuperAdmin && (
               <button
                 onClick={() => router.push('/dashboard/system')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${pathname.includes('/system') ? 'bg-red-600/20 text-red-400 font-medium border border-red-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                  pathname.includes('/system')
+                    ? 'bg-red-500/10 text-red-400 font-medium border border-red-500/20'
+                    : 'text-[#8a9ab5] hover:text-white hover:bg-white/[0.04]'
+                }`}
               >
                 System Config (Super Admin)
               </button>
@@ -104,14 +125,28 @@ export function SidebarNew({ user }: SidebarNewProps) {
           </div>
         )}
 
+        {/* Companies section */}
         <div>
-          <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-400 uppercase tracking-wider">
-            <span>Companies</span>
-            <button onClick={() => setIsCreating(true)} className="text-blue-400 hover:text-blue-300 text-lg leading-none">+</button>
+          <div className="flex items-center justify-between px-2 mb-2">
+            <span className="text-[10px] font-semibold text-[#4a5568] uppercase tracking-widest">
+              Companies
+            </span>
+            <button
+              onClick={() => setIsCreating(true)}
+              className="w-5 h-5 rounded flex items-center justify-center text-[#4f7df7] hover:bg-[#4f7df7]/10 transition-colors text-base leading-none"
+            >
+              +
+            </button>
           </div>
 
           {isCreating && (
-            <form onSubmit={(e) => { e.preventDefault(); if (newCompanyName.trim()) createMutation.mutate(newCompanyName.trim()); }} className="mb-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newCompanyName.trim()) createMutation.mutate(newCompanyName.trim());
+              }}
+              className="mb-2"
+            >
               <input
                 autoFocus
                 type="text"
@@ -119,55 +154,94 @@ export function SidebarNew({ user }: SidebarNewProps) {
                 onChange={(e) => setNewCompanyName(e.target.value)}
                 onBlur={() => { if (!newCompanyName.trim()) setIsCreating(false); }}
                 placeholder="Company name..."
-                className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-[#161b25] border border-white/[0.08] rounded-lg text-sm text-white placeholder-[#4a5568] focus:outline-none focus:border-[#4f7df7] transition-colors"
               />
             </form>
           )}
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {companies.map((company: Company) => (
               <div key={company.id} className="group relative">
                 {editingId === company.id ? (
-                  <form onSubmit={(e) => { e.preventDefault(); if (editedName.trim()) updateMutation.mutate({ id: company.id, name: editedName.trim() }); }} className="flex items-center bg-[#2a2a2a] border border-blue-500 rounded-lg p-1">
-                    <input autoFocus type="text" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="flex-1 px-2 py-1.5 bg-transparent text-sm text-white focus:outline-none" />
-                    <button type="submit" className="p-1 text-emerald-400"><Check size={14} /></button>
-                    <button type="button" onClick={() => setEditingId(null)} className="p-1 text-gray-400 hover:text-red-400"><X size={14} /></button>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editedName.trim()) updateMutation.mutate({ id: company.id, name: editedName.trim() });
+                    }}
+                    className="flex items-center bg-[#161b25] border border-[#4f7df7]/40 rounded-lg p-1"
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="flex-1 px-2 py-1.5 bg-transparent text-sm text-white focus:outline-none"
+                    />
+                    <button type="submit" className="p-1 text-emerald-400 hover:text-emerald-300">
+                      <Check size={14} />
+                    </button>
+                    <button type="button" onClick={() => setEditingId(null)} className="p-1 text-[#8a9ab5] hover:text-red-400">
+                      <X size={14} />
+                    </button>
                   </form>
                 ) : (
                   <button
                     onClick={() => { setActiveCompany(company.id); router.push('/dashboard/my-companies'); }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex justify-between items-center ${activeCompanyId === company.id ? 'bg-blue-600 text-white font-medium' : 'text-gray-300 hover:bg-[#2a2a2a]'}`}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2.5 ${
+                      activeCompanyId === company.id
+                        ? 'bg-[#4f7df7]/10 text-white border border-[#4f7df7]/20'
+                        : 'text-[#8a9ab5] hover:text-white hover:bg-white/[0.04]'
+                    }`}
                   >
-                    <span className="truncate">{company.name}</span>
-                    <div onClick={(e) => { e.stopPropagation(); setEditingId(company.id); setEditedName(company.name); }} className={`p-1.5 rounded-md hover:bg-white/20 ${activeCompanyId === company.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                      <Pencil size={14} />
+                    {/* Initial-letter avatar */}
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      activeCompanyId === company.id
+                        ? 'bg-[#4f7df7]/20 text-[#4f7df7]'
+                        : 'bg-white/[0.06] text-[#8a9ab5]'
+                    }`}>
+                      {company.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate flex-1">{company.name}</span>
+                    {/* Hover-reveal edit icon */}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); setEditingId(company.id); setEditedName(company.name); }}
+                      className="p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    >
+                      <Pencil size={13} className="text-[#8a9ab5]" />
                     </div>
                   </button>
                 )}
               </div>
             ))}
             {companies.length === 0 && !isCreating && (
-              <p className="text-gray-500 text-sm text-center py-4 italic">No companies yet</p>
+              <p className="text-[#4a5568] text-xs text-center py-4 italic">No companies yet</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-800 bg-[#161616]">
+      {/* User footer */}
+      <div className="p-4 border-t border-white/[0.06] bg-[#0a0c10]/60">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {/* Gradient avatar */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4f7df7] to-[#6366f1] flex items-center justify-center text-white font-bold text-sm shrink-0">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-              <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-blue-500/20 text-blue-400">
+              {/* Role badge */}
+              <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-[#4f7df7]/15 text-[#4f7df7] border border-[#4f7df7]/20">
                 {user.role.replace('_', ' ')}
               </span>
             </div>
           </div>
-          <button onClick={() => router.push('/dashboard/notifications')} className="relative p-2 text-gray-400 hover:text-white">
-            <Bell size={18} />
+          {/* Notification bell */}
+          <button
+            onClick={() => router.push('/dashboard/notifications')}
+            className="relative p-2 text-[#8a9ab5] hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
+          >
+            <Bell size={17} />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -175,7 +249,10 @@ export function SidebarNew({ user }: SidebarNewProps) {
             )}
           </button>
         </div>
-        <button onClick={handleSignOut} className="w-full py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors">
+        <button
+          onClick={handleSignOut}
+          className="w-full py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/[0.08] rounded-lg transition-colors"
+        >
           Sign Out
         </button>
       </div>

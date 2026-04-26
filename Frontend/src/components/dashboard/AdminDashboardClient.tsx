@@ -38,25 +38,25 @@ export function AdminDashboardClient() {
   });
 
   if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'SUPER_ADMIN')) {
-    return <div className="flex-1 flex items-center justify-center bg-[#121212] text-gray-400">Access denied</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#0f1117] text-[#8a9ab5]">Access denied</div>;
   }
 
   const students = users.filter(u => u.role === 'STUDENT');
 
   return (
-    <div className="flex-1 bg-[#121212] p-8 overflow-y-auto text-white">
-      <h2 className="text-3xl font-bold mb-6 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+    <div className="flex-1 bg-[#0f1117] p-8 overflow-y-auto text-white">
+      <h2 className="text-3xl font-bold mb-6 tracking-tight text-white">
         Firm Management
       </h2>
 
-      <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-lg border border-gray-800">
-        <h3 className="text-xl font-semibold mb-4 text-gray-300">Student Assignments</h3>
+      <div className="bg-[#0f1117] p-4 rounded-2xl shadow-lg border border-white/[0.07]">
+        <h3 className="text-xl font-semibold mb-4 text-[#8a9ab5]">Student Assignments</h3>
         {isLoading ? (
-          <p className="text-gray-500 text-center py-4">Loading...</p>
+          <p className="text-[#8a9ab5] text-center py-4">Loading...</p>
         ) : (
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-500 text-sm">
+              <tr className="border-b border-white/[0.07] text-[#8a9ab5] text-sm">
                 <th className="pb-3">Student Name</th>
                 <th className="pb-3">Assigned Companies</th>
               </tr>
@@ -70,17 +70,17 @@ export function AdminDashboardClient() {
                 const unassignedCompanies = companies.filter(c => !assignedIds.includes(c.id));
 
                 return (
-                  <tr key={s.id} className="border-b border-gray-800/50">
+                  <tr key={s.id} className="border-b border-white/[0.04]">
                     <td className="py-3 font-medium">
                       {s.name}
-                      <span className="text-gray-500 block text-xs">{s.email}</span>
+                      <span className="text-[#8a9ab5] block text-xs">{s.email}</span>
                     </td>
                     <td className="py-3">
                       <div className="flex flex-wrap gap-2 mb-2">
                         {assignedCompanies.map(c => (
                           <span
                             key={c.id}
-                            className="px-2 py-1 bg-blue-900/40 text-blue-300 text-xs rounded-full border border-blue-800/50 flex items-center group"
+                            className="px-2 py-1 bg-[#4f7df7]/10 text-[#4f7df7] text-xs rounded-full border border-[#4f7df7]/20 flex items-center group"
                           >
                             <button
                               onClick={() => {
@@ -102,7 +102,7 @@ export function AdminDashboardClient() {
                         ))}
                       </div>
                       <select
-                        className="bg-black border border-gray-700 rounded px-2 py-1 outline-none text-xs w-48"
+                        className="bg-[#161b25] border border-white/[0.08] focus:border-[#4f7df7] rounded px-2 py-1 outline-none text-xs w-48 text-[#8a9ab5] focus:text-white transition-colors"
                         onChange={(e) => {
                           if (e.target.value) {
                             assignMutation.mutate({ companyId: e.target.value, userId: s.id });
@@ -122,7 +122,7 @@ export function AdminDashboardClient() {
               })}
               {students.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="py-4 text-center text-gray-500">No students found</td>
+                  <td colSpan={2} className="py-4 text-center text-[#8a9ab5]">No students found</td>
                 </tr>
               )}
             </tbody>

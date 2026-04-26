@@ -23,9 +23,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen w-full bg-[#121212] text-white">
+      <div className="flex items-center justify-center h-screen w-full bg-[#0f1117] text-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4f7df7] mx-auto mb-4" />
           <p>Loading...</p>
         </div>
       </div>
@@ -35,9 +35,9 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   if (!user) return null;
 
   return (
-    <div className="flex h-screen w-full bg-[#121212] overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-[#0a0c10] overflow-hidden font-sans">
       <SidebarNew user={user} />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto bg-[#0f1117]">{children}</main>
     </div>
   );
 }

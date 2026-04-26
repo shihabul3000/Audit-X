@@ -3,69 +3,89 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { History, LayoutDashboard, ShieldCheck, Zap } from 'lucide-react';
 
-export const FeaturesSection: React.FC = () => {
-  const features = [
-    {
-      icon: <History className="text-indigo-500" size={24} />,
-      title: 'Multi-Year Financial History',
-      description: 'Store and access unlimited historical records natively. Instantly view past years without losing the context of your current work.',
-      bg: 'bg-indigo-50 border-indigo-100',
-    },
-    {
-      icon: <Zap className="text-amber-500" size={24} />,
-      title: 'Dynamic Rollover Engine',
-      description: 'Start a new financial year with a single click. The system safely migrates prior year data and resets current balances instantly.',
-      bg: 'bg-amber-50 border-amber-100',
-    },
-    {
-      icon: <LayoutDashboard className="text-emerald-500" size={24} />,
-      title: 'Seamless Reporting',
-      description: 'Automatically generate perfectly formatted Statements of Financial Position (SFP) and Profit & Loss (PNL) from your working data.',
-      bg: 'bg-emerald-50 border-emerald-100',
-    },
-    {
-      icon: <ShieldCheck className="text-rose-500" size={24} />,
-      title: 'Zero Data Loss',
-      description: 'Built with idempotent rules and safe history synchronization ensuring that your sensitive financial data is never overwritten.',
-      bg: 'bg-rose-50 border-rose-100',
-    },
-  ];
+const features = [
+  {
+    icon: <History size={24} style={{ color: '#6366f1' }} />,
+    title: 'Multi-Year Financial History',
+    description: 'Store and access unlimited historical records natively. Instantly view past years without losing the context of your current work.',
+    accent: '#eef2ff',
+    border: '#c7d2fe',
+  },
+  {
+    icon: <Zap size={24} style={{ color: '#f59e0b' }} />,
+    title: 'Dynamic Rollover Engine',
+    description: 'Start a new financial year with a single click. The system safely migrates prior year data and resets current balances instantly.',
+    accent: '#fffbeb',
+    border: '#fde68a',
+  },
+  {
+    icon: <LayoutDashboard size={24} style={{ color: '#10b981' }} />,
+    title: 'Seamless Reporting',
+    description: 'Automatically generate perfectly formatted Statements of Financial Position (SFP) and Profit & Loss (PNL) from your working data.',
+    accent: '#ecfdf5',
+    border: '#a7f3d0',
+  },
+  {
+    icon: <ShieldCheck size={24} style={{ color: '#f43f5e' }} />,
+    title: 'Zero Data Loss',
+    description: 'Built with idempotent rules and safe history synchronization ensuring that your sensitive financial data is never overwritten.',
+    accent: '#fff1f2',
+    border: '#fecdd3',
+  },
+];
 
+export const FeaturesSection: React.FC = () => {
   return (
-    <section id="features" className="py-24 bg-white border-t border-slate-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+    <section id="features" style={{ padding: '96px 24px', background: '#fff', borderTop: '1px solid #f1f5f9' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto 64px' }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-indigo-600 font-semibold tracking-wide uppercase text-sm mb-2">Powerful Capabilities</h2>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Enterprise-Grade Auditing</h3>
-            <p className="text-lg text-slate-600">
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+              Powerful Capabilities
+            </p>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: 16 }}>
+              Enterprise-Grade Auditing
+            </h2>
+            <p style={{ fontSize: 17, color: '#64748b', lineHeight: 1.7 }}>
               Audit-X provides a structured, predictable, and fully automated experience for managing complex financial statements over multiple years.
             </p>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
+        {/* Cards grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
+          {features.map((f, i) => (
             <motion.div
-              key={index}
+              key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`p-8 rounded-2xl border ${feature.bg} shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group`}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              style={{
+                padding: 32,
+                borderRadius: 20,
+                background: f.accent,
+                border: `1px solid ${f.border}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}
             >
-              <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm mb-6 border border-slate-100 group-hover:scale-110 transition-transform">
-                {feature.icon}
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 24, boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                border: '1px solid #f1f5f9',
+              }}>
+                {f.icon}
               </div>
-              <h4 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h4>
-              <p className="text-slate-600 leading-relaxed text-sm">
-                {feature.description}
-              </p>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>{f.title}</h3>
+              <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.65 }}>{f.description}</p>
             </motion.div>
           ))}
         </div>
@@ -73,4 +93,3 @@ export const FeaturesSection: React.FC = () => {
     </section>
   );
 };
-

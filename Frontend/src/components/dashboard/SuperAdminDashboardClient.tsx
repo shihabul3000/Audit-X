@@ -54,52 +54,57 @@ export function SuperAdminDashboardClient() {
 
   if (currentUser?.role !== 'SUPER_ADMIN') {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#121212] text-gray-400">
+      <div className="flex-1 flex items-center justify-center bg-[#0f1117] text-[#8a9ab5]">
         Access denied
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#121212] p-8 overflow-y-auto text-white">
+    <div className="flex-1 bg-[#0f1117] p-8 overflow-y-auto text-white">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-400">
-          System Governance Map
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-white">System Governance Map</h2>
+          <span className="px-2 py-0.5 text-xs font-mono font-semibold uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20 rounded">
+            SYSTEM
+          </span>
+        </div>
         <button
           onClick={() => setShowCreateAdmin(true)}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg text-sm transition-colors"
+          className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-lg text-sm transition-colors"
         >
           + Create Admin / Super Admin
         </button>
       </div>
 
-      <div className="bg-[#1a1a1a] p-4 rounded-xl shadow-lg border border-gray-800">
+      {/* Table */}
+      <div className="rounded-2xl border border-white/[0.07] overflow-hidden">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-gray-800 text-gray-500 text-sm">
-              <th className="pb-3">Name</th>
-              <th className="pb-3">Email</th>
-              <th className="pb-3">Role</th>
-              <th className="pb-3">Status</th>
-              <th className="pb-3">Actions</th>
+            <tr className="bg-[#0d1018] border-b border-white/[0.07] text-[#8a9ab5] text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">Email</th>
+              <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-500">Loading...</td>
+                <td colSpan={5} className="py-8 text-center text-[#8a9ab5]">Loading...</td>
               </tr>
             ) : (
               users.map(u => (
-                <tr key={u.id} className="border-b border-gray-800/50">
-                  <td className="py-3 font-medium">{u.name}</td>
-                  <td className="py-3 text-gray-400 text-sm">{u.email}</td>
-                  <td className="py-3">
+                <tr key={u.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                  <td className="px-4 py-3 font-medium text-white">{u.name}</td>
+                  <td className="px-4 py-3 text-[#8a9ab5] text-sm">{u.email}</td>
+                  <td className="px-4 py-3">
                     <select
                       value={u.role}
                       onChange={e => updateMutation.mutate({ id: u.id, payload: { role: e.target.value } })}
-                      className="bg-black border border-gray-700 rounded px-2 py-1 outline-none focus:border-blue-500 text-sm"
+                      className="bg-[#161b25] border border-white/[0.08] rounded px-2 py-1 outline-none focus:border-[#4f7df7] text-sm text-white"
                       disabled={u.id === currentUser.id}
                     >
                       <option value="STUDENT">Student</option>
@@ -107,35 +112,35 @@ export function SuperAdminDashboardClient() {
                       <option value="SUPER_ADMIN">Super Admin</option>
                     </select>
                   </td>
-                  <td className="py-3">
+                  <td className="px-4 py-3">
                     {u.status === 'BLOCKED' ? (
-                      <span className="text-red-400 font-bold text-xs uppercase bg-red-400/10 px-2 py-1 rounded">
+                      <span className="font-mono text-xs font-semibold uppercase px-2 py-1 rounded-full border bg-red-500/10 text-red-400 border-red-500/20">
                         Banned
                       </span>
                     ) : u.status === 'DELETED' ? (
-                      <span className="text-gray-400 font-bold text-xs uppercase bg-gray-400/10 px-2 py-1 rounded">
+                      <span className="font-mono text-xs font-semibold uppercase px-2 py-1 rounded-full border bg-slate-500/10 text-slate-400 border-slate-500/20">
                         Deleted
                       </span>
                     ) : (
-                      <span className="text-emerald-400 font-bold text-xs uppercase bg-emerald-400/10 px-2 py-1 rounded">
+                      <span className="font-mono text-xs font-semibold uppercase px-2 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                         Active
                       </span>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="px-4 py-3">
                     {u.id !== currentUser.id && u.status !== 'DELETED' && (
                       <div className="flex gap-2">
                         {u.status === 'BLOCKED' ? (
                           <button
                             onClick={() => updateMutation.mutate({ id: u.id, payload: { status: 'ACTIVE' } })}
-                            className="text-blue-400 text-sm px-3 py-1 hover:bg-blue-400/10 rounded"
+                            className="text-[#4f7df7] text-sm px-3 py-1 hover:bg-[#4f7df7]/10 rounded transition-colors"
                           >
                             Unban
                           </button>
                         ) : (
                           <button
                             onClick={() => updateMutation.mutate({ id: u.id, payload: { status: 'BLOCKED' } })}
-                            className="text-red-400 text-sm px-3 py-1 hover:bg-red-400/10 rounded"
+                            className="text-red-400 text-sm px-3 py-1 hover:bg-red-400/10 rounded transition-colors"
                           >
                             Ban
                           </button>
@@ -146,7 +151,7 @@ export function SuperAdminDashboardClient() {
                               deleteMutation.mutate(u.id);
                             }
                           }}
-                          className="text-gray-500 text-sm px-3 py-1 hover:bg-red-400/10 hover:text-red-400 rounded"
+                          className="text-[#8a9ab5] text-sm px-3 py-1 hover:bg-red-400/10 hover:text-red-400 rounded transition-colors"
                         >
                           Delete
                         </button>
@@ -158,7 +163,7 @@ export function SuperAdminDashboardClient() {
             )}
             {!isLoading && users.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-500">No users found</td>
+                <td colSpan={5} className="py-8 text-center text-[#8a9ab5]">No users found</td>
               </tr>
             )}
           </tbody>
@@ -168,78 +173,82 @@ export function SuperAdminDashboardClient() {
       {/* Create Admin Modal */}
       {showCreateAdmin && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1e1e1e] rounded-2xl w-full max-w-md p-6 border border-gray-800 shadow-2xl">
-            <h3 className="text-xl font-bold mb-4">Create Admin / Super Admin</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate({
-                  name: createForm.name,
-                  email: createForm.email,
-                  password: createForm.password,
-                });
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Role</label>
-                <select
-                  value={createForm.role}
-                  onChange={e => setCreateForm(f => ({ ...f, role: e.target.value as 'ADMIN' | 'SUPER_ADMIN' }))}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white outline-none"
-                >
-                  <option value="ADMIN">Admin</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Name</label>
-                <input
-                  required
-                  type="text"
-                  value={createForm.name}
-                  onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Email</label>
-                <input
-                  required
-                  type="email"
-                  value={createForm.email}
-                  onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Password</label>
-                <input
-                  required
-                  type="password"
-                  minLength={6}
-                  value={createForm.password}
-                  onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateAdmin(false)}
-                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium rounded-lg"
-                >
-                  {createMutation.isPending ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </form>
+          <div className="bg-[#0f1117] rounded-2xl w-full max-w-md border border-white/[0.08] shadow-2xl overflow-hidden">
+            {/* Shimmer top line */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#4f7df7]/50 to-transparent" />
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-white">Create Admin / Super Admin</h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createMutation.mutate({
+                    name: createForm.name,
+                    email: createForm.email,
+                    password: createForm.password,
+                  });
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm text-[#8a9ab5] mb-1">Role</label>
+                  <select
+                    value={createForm.role}
+                    onChange={e => setCreateForm(f => ({ ...f, role: e.target.value as 'ADMIN' | 'SUPER_ADMIN' }))}
+                    className="w-full px-3 py-2 bg-[#161b25] border border-white/[0.08] rounded-lg text-white outline-none focus:border-[#4f7df7]"
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-[#8a9ab5] mb-1">Name</label>
+                  <input
+                    required
+                    type="text"
+                    value={createForm.name}
+                    onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#161b25] border border-white/[0.08] rounded-lg text-white outline-none focus:border-[#4f7df7]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-[#8a9ab5] mb-1">Email</label>
+                  <input
+                    required
+                    type="email"
+                    value={createForm.email}
+                    onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#161b25] border border-white/[0.08] rounded-lg text-white outline-none focus:border-[#4f7df7]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-[#8a9ab5] mb-1">Password</label>
+                  <input
+                    required
+                    type="password"
+                    minLength={6}
+                    value={createForm.password}
+                    onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#161b25] border border-white/[0.08] rounded-lg text-white outline-none focus:border-[#4f7df7]"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateAdmin(false)}
+                    className="px-4 py-2 text-[#8a9ab5] hover:text-white hover:bg-white/[0.05] rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createMutation.isPending}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+                  >
+                    {createMutation.isPending ? 'Creating...' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

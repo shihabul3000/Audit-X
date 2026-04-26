@@ -119,45 +119,57 @@ export function AuthPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      
-      {/* Background Gradients & Orbs */}
-      <div className="absolute top-0 inset-x-0 h-full w-full pointer-events-none overflow-hidden">
-        <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} 
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] bg-indigo-600/30 rounded-full mix-blend-screen blur-[120px]"
+    <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+
+      {/* Animated glow orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.25, 0.45, 0.25] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] bg-[#4f7df7]/20 rounded-full blur-[130px]"
         />
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} 
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute top-[40%] -right-[10%] w-[600px] h-[600px] bg-emerald-600/20 rounded-full mix-blend-screen blur-[120px]"
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+          className="absolute top-[40%] -right-[10%] w-[600px] h-[600px] bg-[#6366f1]/15 rounded-full blur-[140px]"
         />
-        <div className="absolute bottom-[-20%] left-[20%] w-[400px] h-[400px] bg-blue-600/20 rounded-full mix-blend-screen blur-[100px]" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[400px] h-[400px] bg-[#4f7df7]/10 rounded-full blur-[110px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800/60 p-8 sm:p-10 overflow-hidden relative">
-          
-          {/* Subtle top glare */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
+        <div className="bg-[#0f1117]/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/[0.08] p-8 sm:p-10 overflow-hidden relative">
+
+          {/* Shimmer top line */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#4f7df7]/60 to-transparent" />
 
           <div className="text-center mb-10">
-            <motion.div 
-              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}
-              className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-emerald-400 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20"
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', delay: 0.2 }}
+              className="w-16 h-16 bg-gradient-to-br from-[#4f7df7] to-[#6366f1] rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-[#4f7df7]/25"
             >
               <ShieldCheck className="text-white w-8 h-8" />
             </motion.div>
             <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">
               {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Create Account' : 'Verify Email'}
             </h1>
-            <p className="text-slate-400 text-sm">
+            <p className="text-[#8a9ab5] text-sm">
               {mode === 'login'
                 ? 'Sign in to your intelligent audit workspace'
                 : mode === 'register'
@@ -168,85 +180,87 @@ export function AuthPageClient() {
 
           <AnimatePresence mode="wait">
             {mode === 'verify-otp' ? (
-              <motion.form 
+              <motion.form
                 key="otp-form"
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleVerifyOTP} className="space-y-6"
+                onSubmit={handleVerifyOTP} className="flex flex-col gap-6"
               >
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Fingerprint className="h-5 w-5 text-slate-500" />
+                    <Fingerprint className="h-5 w-5 text-[#8a9ab5]" />
                   </div>
                   <input
                     type="text" required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white text-center text-2xl tracking-[0.5em] focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-700"
+                    className="w-full pl-12 pr-4 py-3.5 bg-[#161b25] border border-white/[0.08] rounded-xl text-white text-center text-2xl tracking-[0.5em] focus:border-[#4f7df7] focus:ring-1 focus:ring-[#4f7df7] outline-none transition-all placeholder:text-white/20 font-mono"
                     placeholder="000000"
                   />
                 </div>
-                
-                <button type="submit" disabled={loading} className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-70 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center overflow-hidden">
+
+                <button type="submit" disabled={loading} className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-[#4f7df7] to-[#6366f1] hover:from-[#4070e8] hover:to-[#5558e0] disabled:opacity-60 text-white font-bold rounded-xl transition-all shadow-lg shadow-[#4f7df7]/25 flex items-center justify-center overflow-hidden">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Continue'}
                   {!loading && <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                 </button>
-                
-                <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-slate-400 hover:text-white transition-colors">
+
+                <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-[#8a9ab5] hover:text-white transition-colors">
                   Back to login
                 </button>
               </motion.form>
             ) : (
-              <motion.form 
+              <motion.form
                 key="auth-form"
                 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-5"
+                onSubmit={mode === 'login' ? handleLogin : handleRegister} className="flex flex-col gap-5"
               >
                 {mode === 'register' && (
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <User className="h-5 w-5 text-[#8a9ab5] group-focus-within:text-[#4f7df7] transition-colors" />
                     </div>
                     <input
                       type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600"
+                      className="w-full pl-11 pr-4 py-3.5 bg-[#161b25] border border-white/[0.08] rounded-xl text-white focus:border-[#4f7df7] focus:ring-1 focus:ring-[#4f7df7] outline-none transition-all placeholder:text-white/25"
                       placeholder="Full Name"
                     />
                   </div>
                 )}
-                
+
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <Mail className="h-5 w-5 text-[#8a9ab5] group-focus-within:text-[#4f7df7] transition-colors" />
                   </div>
                   <input
                     type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600"
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#161b25] border border-white/[0.08] rounded-xl text-white focus:border-[#4f7df7] focus:ring-1 focus:ring-[#4f7df7] outline-none transition-all placeholder:text-white/25"
                     placeholder="Email Address"
                   />
                 </div>
-                
+
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <Lock className="h-5 w-5 text-[#8a9ab5] group-focus-within:text-[#4f7df7] transition-colors" />
                   </div>
                   <input
                     type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600"
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#161b25] border border-white/[0.08] rounded-xl text-white focus:border-[#4f7df7] focus:ring-1 focus:ring-[#4f7df7] outline-none transition-all placeholder:text-white/25"
                     placeholder="Password"
                   />
                 </div>
 
                 <div className="pt-2">
-                  <button type="submit" disabled={loading} className="group w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-70 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center">
+                  <button type="submit" disabled={loading} className="group w-full py-3.5 px-4 bg-gradient-to-r from-[#4f7df7] to-[#6366f1] hover:from-[#4070e8] hover:to-[#5558e0] disabled:opacity-60 text-white font-bold rounded-xl transition-all shadow-lg shadow-[#4f7df7]/25 flex items-center justify-center">
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : mode === 'login' ? 'Sign In' : 'Create Account'}
                     {!loading && <ArrowRight className="ml-2 w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />}
                   </button>
                 </div>
 
                 <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800" /></div>
-                  <div className="relative flex justify-center text-sm"><span className="px-3 bg-slate-900/60 text-slate-500 text-xs uppercase tracking-wider font-semibold backdrop-blur-xl">Or continue with</span></div>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.07]" /></div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-3 bg-[#0f1117] text-[#8a9ab5] text-xs uppercase tracking-wider font-semibold">Or continue with</span>
+                  </div>
                 </div>
 
-                <button type="button" onClick={handleGoogleLogin} className="w-full py-3.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-white font-semibold rounded-xl transition-all border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-3">
+                <button type="button" onClick={handleGoogleLogin} className="w-full py-3.5 px-4 bg-[#161b25] hover:bg-[#1e2535] text-white font-semibold rounded-xl transition-all border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center gap-3">
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -260,9 +274,9 @@ export function AuthPageClient() {
           </AnimatePresence>
 
           {mode !== 'verify-otp' && (
-            <div className="mt-8 text-center text-sm text-slate-400">
+            <div className="mt-8 text-center text-sm text-[#8a9ab5]">
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-              <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+              <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="text-[#4f7df7] hover:text-[#7096f9] font-semibold transition-colors">
                 {mode === 'login' ? 'Sign up' : 'Log in'}
               </button>
             </div>

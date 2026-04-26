@@ -96,17 +96,17 @@ export function CompanyDashboardClient() {
     return false;
   };
 
-  const statusStyles: Record<string, string> = {
-    DRAFT: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-    SUBMITTED: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    UNDER_REVIEW: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    CHANGES_REQUESTED: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    FINALIZED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  const statusConfig: Record<string, { className: string; label: string }> = {
+    DRAFT: { className: 'bg-[#8a9ab5]/10 text-[#8a9ab5] border-[#8a9ab5]/20', label: 'Draft' },
+    SUBMITTED: { className: 'bg-[#4f7df7]/10 text-[#4f7df7] border-[#4f7df7]/20', label: 'Submitted' },
+    UNDER_REVIEW: { className: 'bg-violet-500/10 text-violet-400 border-violet-500/20', label: 'Under Review' },
+    CHANGES_REQUESTED: { className: 'bg-amber-500/10 text-amber-400 border-amber-500/20', label: 'Changes Requested' },
+    FINALIZED: { className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'Finalized' },
   };
 
   if (!activeCompany) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#121212] text-gray-400">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0f1117] text-[#8a9ab5]">
         <AlertCircle size={64} className="mb-6 opacity-20" />
         <h2 className="text-2xl font-semibold mb-2 text-white">No Company Selected</h2>
         <p>Select a company from the sidebar or create a new one to begin.</p>
@@ -115,53 +115,54 @@ export function CompanyDashboardClient() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#121212] p-8 text-white">
+    <div className="flex-1 overflow-y-auto bg-[#0f1117] p-8 text-white">
       <div className="max-w-5xl mx-auto space-y-8">
-        <div className="flex justify-between items-end border-b border-gray-800 pb-6">
+        <div className="flex justify-between items-end border-b border-white/[0.07] pb-6">
           <div>
-            <p className="text-sm font-medium text-blue-400 mb-1">Company Dashboard</p>
+            <p className="text-xs font-semibold text-[#4f7df7] uppercase tracking-widest mb-1">Company Dashboard</p>
             <h1 className="text-4xl font-bold tracking-tight">{activeCompany.name}</h1>
           </div>
           <button
             onClick={() => { setModalError(''); setShowModal(true); }}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg shadow-lg shadow-emerald-500/20 transition-all"
+            className="px-6 py-2.5 bg-[#4f7df7] hover:bg-[#3d6be0] text-white font-medium rounded-lg shadow-lg shadow-[#4f7df7]/20 transition-all"
           >
             + Start New Year
           </button>
         </div>
 
-        <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+        <div className="bg-[#0f1117] border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#222] text-gray-400 text-xs uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold border-b border-gray-800">Financial Year</th>
-                <th className="px-6 py-4 font-semibold border-b border-gray-800">Reporting Date</th>
-                <th className="px-6 py-4 font-semibold border-b border-gray-800">Status</th>
-                <th className="px-6 py-4 font-semibold border-b border-gray-800 text-right">Actions</th>
+              <tr className="bg-white/[0.03] text-[#8a9ab5] text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 font-semibold border-b border-white/[0.07]">Financial Year</th>
+                <th className="px-6 py-4 font-semibold border-b border-white/[0.07]">Reporting Date</th>
+                <th className="px-6 py-4 font-semibold border-b border-white/[0.07]">Status</th>
+                <th className="px-6 py-4 font-semibold border-b border-white/[0.07] text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {yearsLoading ? (
-                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">Loading...</td></tr>
+                <tr><td colSpan={4} className="px-6 py-12 text-center text-[#8a9ab5]">Loading...</td></tr>
               ) : financialYears.length === 0 ? (
-                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">No financial years found. Start a new year to begin auditing.</td></tr>
+                <tr><td colSpan={4} className="px-6 py-12 text-center text-[#8a9ab5] italic">No financial years found. Start a new year to begin auditing.</td></tr>
               ) : (
                 financialYears.map((fy) => {
                   const canEdit = canEditYear(fy);
+                  const status = statusConfig[fy.reviewStatus] ?? { className: 'bg-white/5 text-[#8a9ab5] border-white/10', label: fy.reviewStatus };
                   return (
-                    <tr key={fy.id} className="hover:bg-[#202020] transition-colors group">
-                      <td className="px-6 py-4 font-medium text-white border-b border-gray-800/50">FY {fy.year}</td>
-                      <td className="px-6 py-4 text-gray-300 border-b border-gray-800/50">{fy.reportingDate}</td>
-                      <td className="px-6 py-4 border-b border-gray-800/50">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[fy.reviewStatus]}`}>
-                          {fy.reviewStatus.replace('_', ' ')}
+                    <tr key={fy.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-6 py-4 font-mono font-semibold text-white border-b border-white/[0.05]">FY {fy.year}</td>
+                      <td className="px-6 py-4 text-[#8a9ab5] border-b border-white/[0.05]">{fy.reportingDate}</td>
+                      <td className="px-6 py-4 border-b border-white/[0.05]">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${status.className}`}>
+                          {status.label}
                           {fy.isLocked && <Lock size={10} className="ml-1.5" />}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right border-b border-gray-800/50">
+                      <td className="px-6 py-4 text-right border-b border-white/[0.05]">
                         <div className="flex items-center justify-end gap-2">
                           {isStudent && (fy.reviewStatus === 'DRAFT' || fy.reviewStatus === 'CHANGES_REQUESTED') && canEdit && (
-                            <button onClick={() => submitMutation.mutate(fy.id)} className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1">
+                            <button onClick={() => submitMutation.mutate(fy.id)} className="text-[#4f7df7] hover:text-white text-sm font-medium flex items-center gap-1">
                               <Send size={14} /> Submit
                             </button>
                           )}
@@ -184,11 +185,11 @@ export function CompanyDashboardClient() {
                               )}
                             </>
                           )}
-                          <button onClick={() => handleOpenYear(fy.id)} className="px-4 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-md text-sm font-medium transition-all flex items-center gap-1">
+                          <button onClick={() => handleOpenYear(fy.id)} className="px-4 py-1.5 bg-[#4f7df7]/10 text-[#4f7df7] hover:bg-[#4f7df7] hover:text-white rounded-md text-sm font-medium transition-all flex items-center gap-1">
                             {canEdit ? 'Continue' : <><Eye size={14} /> View</>}
                           </button>
                           {canEdit && (
-                            <button onClick={() => setDeleteTarget({ id: fy.id, year: fy.year })} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all">
+                            <button onClick={() => setDeleteTarget({ id: fy.id, year: fy.year })} className="p-2 text-[#8a9ab5] hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all">
                               <Trash2 size={16} />
                             </button>
                           )}
@@ -205,42 +206,48 @@ export function CompanyDashboardClient() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1e1e1e] rounded-2xl w-full max-w-md p-6 border border-gray-800 shadow-2xl">
-            <h3 className="text-xl font-bold mb-2">Start New Financial Year</h3>
-            <p className="text-gray-400 text-sm mb-6">Opening balances will be carried forward from the previous year automatically.</p>
-            {modalError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">{modalError}</div>}
-            <form onSubmit={(e) => { e.preventDefault(); createYearMutation.mutate(newDate); }}>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Reporting Date</label>
-                <input type="date" required value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-emerald-500 outline-none" />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 font-medium">Cancel</button>
-                <button type="submit" disabled={createYearMutation.isPending} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium rounded-lg">
-                  {createYearMutation.isPending ? 'Creating...' : 'Confirm & Start'}
-                </button>
-              </div>
-            </form>
+          <div className="bg-[#0f1117] rounded-2xl w-full max-w-md overflow-hidden border border-white/[0.08] shadow-2xl">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-[#4f7df7]/60 to-transparent" />
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-2">Start New Financial Year</h3>
+              <p className="text-[#8a9ab5] text-sm mb-6">Opening balances will be carried forward from the previous year automatically.</p>
+              {modalError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{modalError}</div>}
+              <form onSubmit={(e) => { e.preventDefault(); createYearMutation.mutate(newDate); }}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-[#8a9ab5] mb-2">Reporting Date</label>
+                  <input type="date" required value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full px-4 py-3 bg-[#161b25] border border-white/[0.08] rounded-xl text-white focus:border-[#4f7df7] outline-none transition-colors" />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-[#8a9ab5] hover:text-white hover:bg-white/5 font-medium">Cancel</button>
+                  <button type="submit" disabled={createYearMutation.isPending} className="px-4 py-2 bg-[#4f7df7] hover:bg-[#3d6be0] disabled:opacity-50 text-white font-medium rounded-lg transition-colors">
+                    {createYearMutation.isPending ? 'Creating...' : 'Confirm & Start'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1e1e1e] rounded-2xl w-full max-w-sm p-6 border border-red-900/50 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center"><Trash2 size={18} className="text-red-400" /></div>
-              <h3 className="text-lg font-bold text-white">Delete Financial Year</h3>
-            </div>
-            <p className="text-white font-semibold mb-4 px-3 py-2 bg-[#2a2a2a] rounded-lg border border-gray-700">FY {deleteTarget.year}</p>
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-6">
-              <p className="text-red-400 text-xs">⚠️ This action is irreversible. All audit data will be permanently deleted.</p>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm">Cancel</button>
-              <button onClick={() => deleteYearMutation.mutate(deleteTarget.id)} disabled={deleteYearMutation.isPending} className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-medium rounded-lg text-sm flex items-center gap-2">
-                <Trash2 size={14} /> Delete Permanently
-              </button>
+          <div className="bg-[#0f1117] rounded-2xl w-full max-w-sm overflow-hidden border border-red-500/[0.15] shadow-2xl">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center"><Trash2 size={18} className="text-red-400" /></div>
+                <h3 className="text-lg font-bold text-white">Delete Financial Year</h3>
+              </div>
+              <p className="text-white font-mono font-semibold mb-4 px-3 py-2 bg-white/[0.04] rounded-lg border border-white/[0.07]">FY {deleteTarget.year}</p>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-6">
+                <p className="text-red-400 text-xs">⚠️ This action is irreversible. All audit data will be permanently deleted.</p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-[#8a9ab5] hover:text-white hover:bg-white/5 font-medium text-sm">Cancel</button>
+                <button onClick={() => deleteYearMutation.mutate(deleteTarget.id)} disabled={deleteYearMutation.isPending} className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-medium rounded-lg text-sm flex items-center gap-2">
+                  <Trash2 size={14} /> Delete Permanently
+                </button>
+              </div>
             </div>
           </div>
         </div>

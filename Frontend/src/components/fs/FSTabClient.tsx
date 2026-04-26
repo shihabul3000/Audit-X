@@ -88,9 +88,9 @@ export function FSTabClient({ tab }: FSTabClientProps) {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center h-screen w-full bg-[#808080] text-white font-serif">
+      <div className="flex items-center justify-center h-screen w-full bg-[#0f1117] text-white font-serif">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4f7df7] mx-auto mb-4" />
           <p className="text-xl">Loading Audit Report Data...</p>
         </div>
       </div>
@@ -118,10 +118,10 @@ export function FSTabClient({ tab }: FSTabClientProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#808080] overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-full bg-[#1a1f2e] overflow-hidden font-sans">
       {/* Status / Read-only banner */}
       {!canEdit && financialYear && (
-        <div className="bg-amber-500/90 text-amber-950 px-4 py-2 text-sm font-semibold flex items-center justify-center z-50 shadow-md shrink-0">
+        <div className="bg-amber-500/15 border-b border-amber-500/25 text-amber-300 px-4 py-2 text-sm font-semibold flex items-center justify-center z-50 shrink-0">
           <AlertCircle size={16} className="mr-2" />
           {isLocked
             ? 'This financial year is locked and finalized. Editing is disabled.'
@@ -131,11 +131,11 @@ export function FSTabClient({ tab }: FSTabClientProps) {
 
       {/* Review action bar — shown inside FS pages for quick access */}
       {financialYear && (
-        <div className="bg-[#1a1a1a]/95 border-b border-gray-700 px-4 py-2 flex items-center justify-between shrink-0 z-40">
+        <div className="bg-[#0d1018]/95 border-b border-white/[0.07] px-4 py-2 flex items-center justify-between shrink-0 z-40">
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
+            <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold border ${
               reviewStatus === 'DRAFT' ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
-              reviewStatus === 'SUBMITTED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+              reviewStatus === 'SUBMITTED' ? 'bg-[#4f7df7]/10 text-[#4f7df7] border-[#4f7df7]/20' :
               reviewStatus === 'UNDER_REVIEW' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
               reviewStatus === 'CHANGES_REQUESTED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
               'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -143,7 +143,7 @@ export function FSTabClient({ tab }: FSTabClientProps) {
               {isLocked && <Lock size={10} className="inline mr-1" />}
               {STATUS_LABELS[reviewStatus] ?? reviewStatus}
             </span>
-            <span className="text-gray-500 text-xs">FY {financialYear.year}</span>
+            <span className="text-[#8a9ab5] text-xs font-mono">FY {financialYear.year}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export function FSTabClient({ tab }: FSTabClientProps) {
 
             <button
               onClick={() => router.push('/dashboard/my-companies')}
-              className="px-3 py-1.5 text-gray-400 hover:text-white text-xs border border-gray-700 hover:border-gray-500 rounded-lg transition-all"
+              className="px-3 py-1.5 text-[#8a9ab5] hover:text-white text-xs border border-white/[0.07] hover:border-white/20 rounded-lg transition-all"
             >
               ← Dashboard
             </button>

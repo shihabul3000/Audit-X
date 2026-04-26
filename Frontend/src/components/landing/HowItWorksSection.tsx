@@ -1,87 +1,111 @@
 'use client';
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, ChevronRight, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
+
+const steps = [
+  {
+    step: '01',
+    title: 'Input Multi-Year Data',
+    description: 'Enter your current and prior year balances into a structured interface designed exclusively for financial auditors.',
+    gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+  },
+  {
+    step: '02',
+    title: 'Automated Synchronization',
+    description: 'Audit-X automatically saves historical records and ensures data synchronization across PNL, SFP, SCE, and SCF.',
+    gradient: 'linear-gradient(135deg, #10b981, #0d9488)',
+  },
+  {
+    step: '03',
+    title: 'Rollover to Next Year',
+    description: 'Click "Start New Year" to safely shift your current year into history, preserving previous balances without any manual adjustments.',
+    gradient: 'linear-gradient(135deg, #f59e0b, #f97316)',
+  },
+];
 
 export const HowItWorksSection: React.FC = () => {
-  const steps = [
-    {
-      step: '01',
-      title: 'Input Multi-Year Data',
-      description: 'Enter your current and prior year balances into a structured interface designed exclusively for financial auditors.',
-      color: 'from-blue-500 to-indigo-600'
-    },
-    {
-      step: '02',
-      title: 'Automated Synchronization',
-      description: 'Audit-X automatically saves historical records and ensures data synchronization across PNL, SFP, SCE, and SCF.',
-      color: 'from-emerald-400 to-teal-600'
-    },
-    {
-      step: '03',
-      title: 'Rollover to Next Year',
-      description: 'Click "Start New Year" to safely shift your current year into history, preserving previous balances without any manual adjustments.',
-      color: 'from-amber-400 to-orange-500'
-    }
-  ];
-
   return (
-    <section id="how-it-works" className="py-24 bg-slate-50 relative overflow-hidden">
-      <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 bg-indigo-50 rounded-full blur-3xl opacity-50"></div>
+    <section id="how-it-works" style={{ padding: '96px 24px', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+      {/* Decorative blob */}
+      <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+      <div style={{ maxWidth: 1120, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 64px' }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-indigo-600 font-semibold tracking-wide uppercase text-sm mb-2">Workflow & Process</h2>
-            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">How Audit-X Works</h3>
-            <p className="text-lg text-slate-600">
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+              Workflow &amp; Process
+            </p>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: 16 }}>
+              How Audit-X Works
+            </h2>
+            <p style={{ fontSize: 17, color: '#64748b', lineHeight: 1.7 }}>
               Simplify complex financial transitions in 3 easy steps.
             </p>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center sm:text-left relative">
-          {/* Connecting Line for desktop */}
-          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-slate-200 z-0"></div>
-
-          {steps.map((step, index) => (
+        {/* Steps */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40, marginBottom: 64 }}>
+          {steps.map((s, i) => (
             <motion.div
-              key={index}
+              key={i}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-              className="relative z-10 flex flex-col items-center sm:items-start group"
+              transition={{ duration: 0.6, delay: i * 0.15 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
             >
-              <div className={`w-24 h-24 mb-6 rounded-2xl bg-gradient-to-br ${step.color} shadow-lg shadow-slate-300/50 flex items-center justify-center text-white text-3xl font-black transform group-hover:-translate-y-2 transition-transform duration-300 ring-4 ring-white`}>
-                {step.step}
+              <div style={{
+                width: 80, height: 80, borderRadius: 20,
+                background: s.gradient,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 28, fontWeight: 900,
+                marginBottom: 24,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                outline: '4px solid #fff',
+              }}>
+                {s.step}
               </div>
-              <h4 className="text-2xl font-bold text-slate-900 mb-3">{step.title}</h4>
-              <p className="text-slate-600 leading-relaxed sm:pr-8">
-                {step.description}
-              </p>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>{s.title}</h3>
+              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.65 }}>{s.description}</p>
             </motion.div>
           ))}
         </div>
 
-        <div className="mt-20 pt-16 border-t border-slate-200">
-          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-xl">
-              <h4 className="text-2xl font-bold text-slate-900 mb-3">See it in action</h4>
-              <p className="text-slate-600">Our seamless working dashboard requires zero configuration.</p>
-            </div>
-            <a href="/dashboard" className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold transition-colors shrink-0">
-              <Play size={18} fill="currentColor" /> Watch Walkthrough
-            </a>
+        {/* Bottom CTA card */}
+        <div style={{
+          background: '#fff', borderRadius: 24, padding: '40px 48px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9',
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 24,
+        }}>
+          <div>
+            <h4 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>See it in action</h4>
+            <p style={{ fontSize: 15, color: '#64748b' }}>Our seamless working dashboard requires zero configuration.</p>
           </div>
+          <a
+            href="/auth"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#0f172a', color: '#fff',
+              padding: '12px 24px', borderRadius: 999,
+              fontSize: 15, fontWeight: 600,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              transition: 'background 0.2s',
+            }}
+          >
+            <Play size={16} fill="currentColor" /> Watch Walkthrough
+          </a>
         </div>
       </div>
     </section>
   );
 };
-

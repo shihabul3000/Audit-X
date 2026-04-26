@@ -8,13 +8,21 @@ import { CTASection } from './CTASection';
 import { Footer } from './Footer';
 
 export const LandingPage: React.FC = () => {
-  // Ensure we start at the top of the page smoothly
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 scroll-smooth">
+    <div
+      id="landing-page"
+      style={{
+        minHeight: '100vh',
+        background: '#fff',
+        color: '#0f172a',
+        fontFamily: "'Outfit', 'DM Sans', sans-serif",
+        overflowX: 'hidden',
+      }}
+    >
       <Navbar />
       <HeroSection />
       <FeaturesSection />
