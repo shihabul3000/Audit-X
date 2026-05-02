@@ -12,7 +12,8 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "push": "prisma db push",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
