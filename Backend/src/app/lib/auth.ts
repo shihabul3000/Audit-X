@@ -108,10 +108,13 @@ export const auth = betterAuth({
     envVars.BETTER_AUTH_URL,
     'http://localhost:3000',
     'http://localhost:5000',
+    // Production Vercel URLs
+    'https://frontend-gamma-orcin-61.vercel.app',
+    'https://backend-weld-theta-88.vercel.app',
   ],
 
   advanced: {
-    useSecureCookies: false,
+    useSecureCookies: process.env.NODE_ENV === 'production',
     disableCSRFCheck: true,
     crossSubDomainCookies: {
       enabled: false,
@@ -119,8 +122,8 @@ export const auth = betterAuth({
     cookies: {
       sessionToken: {
         attributes: {
-          sameSite: 'lax',
-          secure: false,
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          secure: process.env.NODE_ENV === 'production',
           httpOnly: true,
           path: '/',
         },

@@ -16,6 +16,9 @@ const corsOptions = {
     envVars.BETTER_AUTH_URL,
     'http://localhost:3000',
     'http://localhost:5000',
+    // Production Vercel URLs
+    'https://frontend-gamma-orcin-61.vercel.app',
+    'https://backend-weld-theta-88.vercel.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
