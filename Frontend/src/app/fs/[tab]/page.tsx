@@ -16,7 +16,7 @@ export function generateStaticParams() {
     { tab: 'pnl' },
     { tab: 'sce' },
     { tab: 'scf' },
-    { tab: 'p_discussion' },
+    // { tab: 'p_discussion' }, // P_Discussion temporarily hidden — uncomment to restore route /fs/p_discussion
     { tab: 'n4-13' },
     { tab: 'ppe' },
   ];

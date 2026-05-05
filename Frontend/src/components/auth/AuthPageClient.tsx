@@ -253,6 +253,7 @@ export function AuthPageClient() {
                   </button>
                 </div>
 
+                {/* Google login - temporarily hidden (functionality to be implemented later)
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.07]" /></div>
                   <div className="relative flex justify-center text-sm">
@@ -269,6 +270,7 @@ export function AuthPageClient() {
                   </svg>
                   Google
                 </button>
+                */}
               </motion.form>
             )}
           </AnimatePresence>

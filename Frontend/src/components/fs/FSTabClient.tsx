@@ -15,7 +15,7 @@ import { SCE } from '@/components/tabs/SCE';
 import { SCF } from '@/components/tabs/SCF';
 import { N4_13 } from '@/components/tabs/N4_13';
 import { PPE } from '@/components/tabs/PPE';
-import { P_Discussion } from '@/components/tabs/P_Discussion';
+// import { P_Discussion } from '@/components/tabs/P_Discussion'; // P_Discussion - temporarily hidden (functionality to be implemented later)
 import { authService } from '@/services/api/auth.service';
 import { financialYearService } from '@/services/api/financialYear.service';
 import { useUIStore } from '@/store/useUIStore';
@@ -25,7 +25,7 @@ interface FSTabClientProps {
   tab: string;
 }
 
-const TABS: Tab[] = ['Cover', 'SFP', 'PNL', 'SCE', 'SCF', 'P_Discussion', 'N4-13', 'PPE'];
+const TABS: Tab[] = ['Cover', 'SFP', 'PNL', 'SCE', 'SCF', /* 'P_Discussion', */ 'N4-13', 'PPE']; // P_Discussion temporarily hidden — uncomment to restore tab in bottom bar
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Draft',
@@ -110,7 +110,7 @@ export function FSTabClient({ tab }: FSTabClientProps) {
       case 'PNL': return <PNL data={tabData} />;
       case 'SCE': return <SCE data={tabData} />;
       case 'SCF': return <SCF data={tabData} />;
-      case 'P_Discussion': return <P_Discussion data={tabData} onUpdate={updateData} />;
+      // case 'P_Discussion': return <P_Discussion data={tabData} onUpdate={updateData} />; // P_Discussion temporarily hidden — uncomment to restore
       case 'N4-13': return <N4_13 data={tabData} />;
       case 'PPE': return <PPE data={tabData} onUpdate={updateData} />;
       default: return <div className="flex items-center justify-center h-full text-white">Tab not found</div>;
